@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "735759101430",
+    "project_id": "cryptonotify-64c29",
+    "storage_bucket": "cryptonotify-64c29.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:735759101430:android:9a9d44261b2ca17d97ebd7",
+        "android_client_info": {
+          "package_name": "com.crypto.notify"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAsuG2kNTKGncml7AA-pOWXKS4a9kKfxMQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -94,39 +94,24 @@ export default function CryptoListScreen() {
             data={filteredCryptos}
             keyExtractor={crypto => crypto.symbol}
             renderItem={({ item: crypto }) => {
-              // Format symbol: BTCUSDT -> BTC/USD
               const name = crypto.symbol.replace('USDT', '/USD');
               return (
-                <View style={themedStyles.itemRow}>
+                <TouchableOpacity
+                  style={themedStyles.itemRow}
+                  activeOpacity={0.85}
+                  onPress={() => notifyMe(crypto)}
+                >
                   <View style={{ flex: 1 }}>
                     <Text style={themedStyles.cryptoName}>{name}</Text>
                     <Text style={themedStyles.cryptoPrice}>${crypto.price.toFixed(2)}</Text>
                   </View>
-                  <View style={themedStyles.verticalDivider} />
-                  <TouchableOpacity
-                    style={themedStyles.iconButton}
-                    onPress={() => addToFavorites(crypto)}
-                    accessibilityLabel="Add to favorites"
-                  >
-                    <FontAwesome
-                      name="heart"
-                      size={22}
-                      color={colorScheme === 'dark' ? '#ff6b81' : '#e74c3c'}
-                    />
-                  </TouchableOpacity>
-                  <View style={themedStyles.verticalDivider} />
-                  <TouchableOpacity
-                    style={themedStyles.iconButton}
-                    onPress={() => notifyMe(crypto)}
-                    accessibilityLabel="Enable notifications"
-                  >
-                    <FontAwesome
-                      name="bell"
-                      size={22}
-                      color={colorScheme === 'dark' ? '#f1c40f' : '#f39c12'}
-                    />
-                  </TouchableOpacity>
-                </View>
+                  <FontAwesome
+                    name="bell"
+                    size={22}
+                    color={colorScheme === 'dark' ? '#f1c40f' : '#f39c12'}
+                    style={{ marginLeft: 8 }}
+                  />
+                </TouchableOpacity>
               );
             }}
             ListEmptyComponent={<Text style={themedStyles.emptyText}>No cryptos found.</Text>}

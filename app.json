@@ -21,7 +21,8 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.crypto.notify"
+      "package": "com.crypto.notify",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "bundler": "metro",

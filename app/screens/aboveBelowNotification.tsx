@@ -1,7 +1,8 @@
+import { getApp } from '@react-native-firebase/app';
+import { getMessaging, getToken } from '@react-native-firebase/messaging';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, useColorScheme, View } from 'react-native';
-import { getOrCreateUserId } from '../../userId';
 
 type Mode = 'aboveBelow' | 'percent';
 
@@ -13,13 +14,8 @@ export default function NotificationSetup() {
   const [percentage, setPercentage] = useState('');
   const [isAbove, setIsAbove] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
   const router = useRouter();
 
-  // Fetch userId
-  useEffect(() => {
-    getOrCreateUserId().then(setUserId);
-  }, []);
 
   // Poll current price every second
   useEffect(() => {
@@ -41,7 +37,9 @@ export default function NotificationSetup() {
   }, [mode, currentPrice]);
 
   const handleSubmit = async () => {
-    if (!userId) {
+    const userToken = await getToken(getMessaging(getApp()));
+
+    if (!userToken) {
       Alert.alert('User ID error', 'Could not retrieve user ID.');
       return;
     }
@@ -64,7 +62,7 @@ export default function NotificationSetup() {
 
     const body: any = {
       type,
-      userId,
+      userId: userToken,
       symbol,
       price: parseFloat(targetPrice),
     };
@@ -82,6 +80,7 @@ export default function NotificationSetup() {
         Alert.alert('Success', 'Notification set!');
         router.back();
       } else {
+        console.log(body, res.status, await res.text());
         Alert.alert('Error', 'Failed to set notification.');
       }
     } catch {
@@ -99,7 +98,7 @@ export default function NotificationSetup() {
         <TouchableOpacity
           style={[
             themedStyles.selectorButton,
-            isAbove ? themedStyles.selectorActiveLeft : themedStyles.selectorInactive,
+            isAbove ? themedStyles.selectorActiveAbove : themedStyles.selectorInactive,
           ]}
           onPress={() => setIsAbove(true)}
           activeOpacity={0.85}
@@ -113,7 +112,7 @@ export default function NotificationSetup() {
         <TouchableOpacity
           style={[
             themedStyles.selectorButton,
-            !isAbove ? themedStyles.selectorActiveRight : themedStyles.selectorInactive,
+            !isAbove ? themedStyles.selectorActiveBelow : themedStyles.selectorInactive,
           ]}
           onPress={() => setIsAbove(false)}
           activeOpacity={0.85}
@@ -130,6 +129,7 @@ export default function NotificationSetup() {
   return (
     <View style={themedStyles.safeArea}>
       <View style={themedStyles.container}>
+        <View style={themedStyles.spacer} />
         <Text style={themedStyles.title}>
           {mode === 'percent' ? 'Percentage Change Notification' : 'Above/Below Notification'}
         </Text>
@@ -173,6 +173,7 @@ export default function NotificationSetup() {
         >
           <Text style={themedStyles.buttonText}>{loading ? 'Submitting...' : 'Submit'}</Text>
         </TouchableOpacity>
+        <View style={themedStyles.spacer} />
       </View>
     </View>
   );
@@ -186,14 +187,17 @@ const styles = (colorScheme: string | null) =>
     },
     container: {
       flex: 1,
-      padding: 20,
-      justifyContent: 'center',
+      padding: 24,
+      justifyContent: 'space-between',
+    },
+    spacer: {
+      flex: 0.1,
     },
     title: {
-      fontSize: 20,
+      fontSize: 22,
       fontWeight: 'bold',
       color: colorScheme === 'dark' ? '#fff' : '#222',
-      marginBottom: 2,
+      marginBottom: 8,
       textAlign: 'center',
     },
     subtitle: {
@@ -206,6 +210,7 @@ const styles = (colorScheme: string | null) =>
       fontSize: 16,
       color: colorScheme === 'dark' ? '#b2bec3' : '#636e72',
       marginBottom: 8,
+      textAlign: 'center',
     },
     input: {
       height: 48,
@@ -217,6 +222,7 @@ const styles = (colorScheme: string | null) =>
       color: colorScheme === 'dark' ? '#fff' : '#222',
       backgroundColor: colorScheme === 'dark' ? '#23272f' : '#fff',
       marginBottom: 18,
+      textAlign: 'center',
     },
     selectorRow: {
       flexDirection: 'row',
@@ -228,7 +234,7 @@ const styles = (colorScheme: string | null) =>
       backgroundColor: colorScheme === 'dark' ? '#23272f' : '#eaf0fb',
       borderWidth: 1,
       borderColor: colorScheme === 'dark' ? '#353b48' : '#b2bec3',
-      height: 48,
+      height: 56,
     },
     selectorButton: {
       flex: 1,
@@ -237,17 +243,15 @@ const styles = (colorScheme: string | null) =>
       height: '100%',
       paddingVertical: 0,
     },
-    selectorActiveLeft: {
-      backgroundColor: '#fff',
+    selectorActiveAbove: {
+      backgroundColor: '#27ae60', // Green
       borderTopLeftRadius: 12,
       borderBottomLeftRadius: 12,
-      borderRightWidth: 0,
     },
-    selectorActiveRight: {
-      backgroundColor: '#27ae60',
+    selectorActiveBelow: {
+      backgroundColor: '#e74c3c', // Red
       borderTopRightRadius: 12,
       borderBottomRightRadius: 12,
-      borderLeftWidth: 0,
     },
     selectorInactive: {
       backgroundColor: 'transparent',
@@ -258,25 +262,27 @@ const styles = (colorScheme: string | null) =>
       backgroundColor: colorScheme === 'dark' ? '#353b48' : '#b2bec3',
     },
     selectorText: {
-      fontSize: 16,
+      fontSize: 18,
       fontWeight: 'bold',
+      color: '#fff',
     },
     selectorTextActive: {
-      color: '#2980ff',
+      color: '#fff',
     },
     selectorTextInactive: {
-      color: colorScheme === 'dark' ? '#b2bec3' : '#636e72',
+      color: '#fff',
+      opacity: 0.6,
     },
     button: {
       backgroundColor: colorScheme === 'dark' ? '#f1c40f' : '#f39c12',
       borderRadius: 10,
-      padding: 16,
+      padding: 18,
       alignItems: 'center',
       marginTop: 12,
     },
     buttonText: {
       color: colorScheme === 'dark' ? '#222' : '#fff',
-      fontSize: 18,
+      fontSize: 20,
       fontWeight: 'bold',
     },
   });

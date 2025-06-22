@@ -7,23 +7,6 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-
-import { getOrCreateUserId } from '@/userId';
-
-function UserIdText() {
-  const [userId, setUserId] = useState<string | null>(null);
-
-  useEffect(() => {
-    getOrCreateUserId().then(setUserId);
-  }, []);
-
-  return (
-    <ThemedText type="title">
-      CryptoNotify {userId ? userId : ''}
-    </ThemedText>
-  );
-}
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -38,7 +21,6 @@ export default function HomeScreen() {
         />
       }>
       <ThemedView style={styles.titleContainer}>
-        <UserIdText />
         <HelloWave />
       </ThemedView>
 
