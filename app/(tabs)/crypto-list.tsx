@@ -25,7 +25,7 @@ export default function CryptoListScreen() {
           .then(res => res.json())
           .then(data => {
             const prices = data.map(CryptoPrice.fromJson).sort((a: CryptoPrice, b: CryptoPrice) => b.price - a.price);
-            setCryptos(prices.filter((crypto: CryptoPrice) => crypto.price > 0));
+            setCryptos(prices.filter((crypto: CryptoPrice ) => crypto.price > 0));
             setLoading(false);
           })
           .catch(err => {
@@ -108,7 +108,7 @@ export default function CryptoListScreen() {
                   <FontAwesome
                     name="bell"
                     size={22}
-                    color={colorScheme === 'dark' ? '#f1c40f' : '#f39c12'}
+                    color={colorScheme === 'dark' ? '#87ceeb' : '#36525E'}
                     style={{ marginLeft: 8 }}
                   />
                 </TouchableOpacity>
