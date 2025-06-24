@@ -1,14 +1,9 @@
 import { FontAwesome } from '@expo/vector-icons';
 import messaging from '@react-native-firebase/messaging';
-import { Image } from 'expo-image';
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Platform, StyleSheet, Text, TouchableOpacity, View, useColorScheme } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View, useColorScheme } from 'react-native';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-
 import { useRouter } from 'expo-router';
 
 type Notification = {
@@ -30,6 +25,7 @@ export default function HomeScreen() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [cryptoPrices, setCryptoPrices] = useState<CryptoPrice[]>([]);
   const [loading, setLoading] = useState(true);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Get FCM token as userId
   useEffect(() => {
@@ -39,47 +35,46 @@ export default function HomeScreen() {
       .catch(() => setUserId(null));
   }, []);
 
-  // Fetch notifications and prices
+  // Fetch notifications once
   useEffect(() => {
     if (!userId) return;
     setLoading(true);
-    console.log(`Fetching notifications for userId: ${userId}`);
-    
     fetch(`http://192.168.0.167:8080/api/user/${userId}/notifications`)
-      .then(res => {
-        console.log(`Response status: ${res}`);
-        return res.json()
-      })
+      .then(res => res.json())
       .then((notifs: Notification[] | Notification) => {
-        console.log('Fetched notificationst:', notifs);
         const notifArr = Array.isArray(notifs) ? notifs : [notifs];
-        console.log(notifs);
-
         setNotifications(notifArr);
-        if (notifArr.length === 0) {
-          setCryptoPrices([]);
-          setLoading(false);
-          return;
-        }
-        fetch('http://192.168.0.167:8080/api/crypto/list')
-          .then(res => res.json())
-          .then((prices: CryptoPrice[]) => {
-            const trackedSymbols = notifArr.map(n => n.symbol);
-            setCryptoPrices(
-              prices.filter(c => trackedSymbols.includes(c.symbol))
-            );
-            setLoading(false);
-          })
-          .catch(() => setLoading(false));
+        setLoading(false);
       })
       .catch((e) => {
-        console.log('Error fetching notifications', e);
-        
         setNotifications([]);
-        setCryptoPrices([]);
         setLoading(false);
       });
   }, [userId]);
+
+  // Fetch prices every second for tracked symbols
+  useEffect(() => {
+    if (!notifications.length) return;
+
+    const fetchPrices = () => {
+      fetch('http://192.168.0.167:8080/api/crypto/list')
+        .then(res => res.json())
+        .then((prices: CryptoPrice[]) => {
+          const trackedSymbols = notifications.map(n => n.symbol);
+          setCryptoPrices(
+            prices.filter(c => trackedSymbols.includes(c.symbol))
+          );
+        })
+        .catch(() => {});
+    };
+
+    fetchPrices();
+    intervalRef.current = setInterval(fetchPrices, 1000);
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [notifications]);
 
   const themedStyles = styles(colorScheme);
 
@@ -109,56 +104,45 @@ export default function HomeScreen() {
     );
   }
 
+  // Count notifications per symbol
+  const notifCount: Record<string, number> = {};
+  notifications.forEach(n => {
+    notifCount[n.symbol] = (notifCount[n.symbol] || 0) + 1;
+  });
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{
-        light: '#A1CEDC',
-        dark: '#1D3D47',
-      }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={themedStyles.reactLogo}
-        />
-      }>
-      <ThemedView style={themedStyles.titleContainer}>
-        <HelloWave />
-      </ThemedView>
-
-      <ThemedView style={themedStyles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-
-      <View style={themedStyles.container}>
-        <Text style={themedStyles.header}>Your Tracked Cryptos</Text>
-        <FlatList
-          data={cryptoPrices}
-          keyExtractor={item => item.symbol}
-          renderItem={({ item }) => (
-            <View style={themedStyles.cryptoCard}>
-              <View style={{ flex: 1 }}>
-                <Text style={themedStyles.cryptoName}>{item.symbol.replace('USDT', '/USD')}</Text>
-                <Text style={themedStyles.cryptoPrice}>${item.price}</Text>
+    <FlatList
+      data={cryptoPrices}
+      keyExtractor={item => item.symbol}
+      ListHeaderComponent={
+        <>
+          <ThemedView style={themedStyles.titleContainer}>
+          </ThemedView>
+          <View style={themedStyles.container}>
+            <Text style={themedStyles.header}>Your Tracked Cryptos</Text>
+          </View>
+        </>
+      }
+      renderItem={({ item }) => (
+        <View style={themedStyles.cryptoCard}>
+          <View style={{ flex: 1 }}>
+            <Text style={themedStyles.cryptoName}>
+              {item.symbol.replace('USDT', '/USD')}
+            </Text>
+            <Text style={themedStyles.cryptoPrice}>${item.price}</Text>
+          </View>
+          <View style={{ position: 'relative', justifyContent: 'center', alignItems: 'center' }}>
+            <FontAwesome name="bell" size={24} color="#87ceeb" />
+            {notifCount[item.symbol] > 0 && (
+              <View style={themedStyles.bubble}>
+                <Text style={themedStyles.bubbleText}>{notifCount[item.symbol]}</Text>
               </View>
-              <FontAwesome name="bell" size={24} color="#87ceeb" />
-            </View>
-          )}
-          contentContainerStyle={{ paddingBottom: 24 }}
-        />
-      </View>
-    </ParallaxScrollView>
+            )}
+          </View>
+        </View>
+      )}
+      contentContainerStyle={{ paddingBottom: 24, paddingHorizontal: 16 }}
+    />
   );
 }
 
@@ -168,22 +152,12 @@ const styles = (colorScheme: string) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 8,
-    },
-    stepContainer: {
-      gap: 8,
+      marginTop: 24,
       marginBottom: 8,
     },
-    reactLogo: {
-      height: 178,
-      width: 290,
-      bottom: 0,
-      left: 0,
-      position: 'absolute',
-    },
     container: {
-      flex: 1,
       backgroundColor: colorScheme === 'dark' ? '#181a20' : '#f5f6fa',
-      padding: 16,
+      padding: 0,
     },
     header: {
       fontSize: 22,
@@ -229,5 +203,24 @@ const styles = (colorScheme: string) =>
       fontSize: 16,
       color: colorScheme === 'dark' ? '#f1c40f' : '#636e72',
       marginTop: 2,
+    },
+    bubble: {
+      position: 'absolute',
+      top: -6,
+      right: -6,
+      minWidth: 18,
+      height: 18,
+      borderRadius: 9,
+      backgroundColor: '#e74c3c',
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 4,
+      zIndex: 1,
+    },
+    bubbleText: {
+      color: '#fff',
+      fontSize: 12,
+      fontWeight: 'bold',
+      textAlign: 'center',
     },
   });
