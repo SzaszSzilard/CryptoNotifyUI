@@ -1,3 +1,5 @@
+import { CryptoPrice } from '@/models/CryptoPrice';
+import { HttpService } from '@/services/httpService';
 import { getApp } from '@react-native-firebase/app';
 import { getMessaging, getToken } from '@react-native-firebase/messaging';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -9,8 +11,8 @@ type Mode = 'aboveBelow' | 'percent';
 export default function NotificationSetup() {
   const { symbol, mode = 'aboveBelow' } = useLocalSearchParams<{ symbol?: string; mode?: Mode }>();
   const colorScheme = useColorScheme() ?? 'light';
-  const [currentPrice, setCurrentPrice] = useState<number | null>(null);
-  const [targetPrice, setTargetPrice] = useState('');
+  const [crypto, setCrypto] = useState<CryptoPrice | null>(null);
+  const [targetPrice, setTargetPrice] = useState<number | null>(null);
   const [percentage, setPercentage] = useState('');
   const [isAbove, setIsAbove] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -20,21 +22,20 @@ export default function NotificationSetup() {
   // Poll current price every second
   useEffect(() => {
     if (!symbol) return;
-    const interval = setInterval(() => {
-      fetch(`http://192.168.0.167:8080/api/crypto/symbol/${symbol}`)
-        .then(res => res.json())
-        .then(data => setCurrentPrice(data.price))
-        .catch(() => setCurrentPrice(null));
-    }, 1000);
+    const interval = setInterval(() => 
+      HttpService.get<CryptoPrice>(`crypto/symbol/${symbol}`)
+        .then(crypto => setCrypto(crypto))
+    , 1000);
+
     return () => clearInterval(interval);
   }, [symbol]);
 
   // When mode is percent, always keep targetPrice in sync with currentPrice
   useEffect(() => {
-    if (mode === 'percent' && currentPrice !== null) {
-      setTargetPrice(currentPrice.toString());
+    if (mode === 'percent' && crypto?.price !== null) {
+      setTargetPrice(crypto?.price || null);
     }
-  }, [mode, currentPrice]);
+  }, [mode, crypto?.price]);
 
   const handleSubmit = async () => {
     const userToken = await getToken(getMessaging(getApp()));
@@ -64,10 +65,10 @@ export default function NotificationSetup() {
       type,
       userId: userToken,
       symbol,
-      price: parseFloat(targetPrice),
+      price: targetPrice,
     };
     if (mode === 'percent') {
-      body.percentage = parseFloat(percentage);
+      body.percentage = percentage;
     }
 
     try {
@@ -137,11 +138,13 @@ export default function NotificationSetup() {
         <Text style={themedStyles.title}>
           {mode === 'percent' ? 'Percentage Change Notification' : 'Above/Below Notification'}
         </Text>
+        
         <Text style={themedStyles.symbolPriceLine}>
-          {typeof symbol === 'string'
-            ? `${symbol.replace('USDT', '/USD')}  ${currentPrice !== null ? `$${currentPrice}` : '...'}`
-            : ''}
+          {typeof symbol === 'string' ? 
+            `${symbol.replace('USDT', '/USD')} ${crypto?.price}`
+          : ''}
         </Text>
+
         <View style={{ height: 18 }} />
         {mode === 'aboveBelow' && (
           <>
