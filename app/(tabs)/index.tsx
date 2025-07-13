@@ -2,7 +2,9 @@ import { FontAwesome } from '@expo/vector-icons';
 import messaging from '@react-native-firebase/messaging';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View, useColorScheme } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 
+import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useRouter } from 'expo-router';
 
@@ -25,7 +27,7 @@ export default function HomeScreen() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [cryptoPrices, setCryptoPrices] = useState<CryptoPrice[]>([]);
   const [loading, setLoading] = useState(true);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Get FCM token as userId
   useEffect(() => {
@@ -35,22 +37,24 @@ export default function HomeScreen() {
       .catch(() => setUserId(null));
   }, []);
 
-  // Fetch notifications once
-  useEffect(() => {
-    if (!userId) return;
-    setLoading(true);
-    fetch(`http://192.168.0.167:8080/api/user/${userId}/notifications`)
-      .then(res => res.json())
-      .then((notifs: Notification[] | Notification) => {
-        const notifArr = Array.isArray(notifs) ? notifs : [notifs];
-        setNotifications(notifArr);
-        setLoading(false);
-      })
-      .catch((e) => {
-        setNotifications([]);
-        setLoading(false);
-      });
-  }, [userId]);
+  // Fetch notifications every time the screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      if (!userId) return;
+      setLoading(true);
+      fetch(`http://192.168.0.167:8080/api/user/${userId}/notifications`)
+        .then(res => res.json())
+        .then((notifs: Notification[] | Notification) => {
+          const notifArr = Array.isArray(notifs) ? notifs : [notifs];
+          setNotifications(notifArr);
+          setLoading(false);
+        })
+        .catch(() => {
+          setNotifications([]);
+          setLoading(false);
+        });
+    }, [userId])
+  );
 
   // Fetch prices every second for tracked symbols
   useEffect(() => {
@@ -118,13 +122,17 @@ export default function HomeScreen() {
         <>
           <ThemedView style={themedStyles.titleContainer}>
           </ThemedView>
-          <View style={themedStyles.container}>
-            <Text style={themedStyles.header}>Your Tracked Cryptos</Text>
-          </View>
+          <ThemedView style={themedStyles.container}>
+            <ThemedText style={themedStyles.header}>Your Tracked Cryptos</ThemedText>
+          </ThemedView>
         </>
       }
       renderItem={({ item }) => (
-        <View style={themedStyles.cryptoCard}>
+        <TouchableOpacity
+          style={themedStyles.cryptoCard}
+          activeOpacity={0.85}
+          onPress={() => router.push({ pathname: '/tracked/[symbol]', params: { symbol: item.symbol } })}
+        >
           <View style={{ flex: 1 }}>
             <Text style={themedStyles.cryptoName}>
               {item.symbol.replace('USDT', '/USD')}
@@ -139,7 +147,7 @@ export default function HomeScreen() {
               </View>
             )}
           </View>
-        </View>
+        </TouchableOpacity>
       )}
       contentContainerStyle={{ paddingBottom: 24, paddingHorizontal: 16 }}
     />
@@ -162,7 +170,7 @@ const styles = (colorScheme: string) =>
     header: {
       fontSize: 22,
       fontWeight: 'bold',
-      color: colorScheme === 'dark' ? '#fff' : '#222',
+      color: colorScheme === 'dark' ? '#fff' : '#181a20',
       marginBottom: 18,
       textAlign: 'center',
     },
@@ -176,7 +184,7 @@ const styles = (colorScheme: string) =>
     emptyTitle: {
       fontSize: 20,
       fontWeight: 'bold',
-      color: colorScheme === 'dark' ? '#fff' : '#222',
+      color: colorScheme === 'dark' ? '#fff' : '#181a20',
       marginBottom: 8,
       textAlign: 'center',
     },
@@ -188,20 +196,23 @@ const styles = (colorScheme: string) =>
     cryptoCard: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: colorScheme === 'dark' ? '#23272f' : '#fff',
+      backgroundColor: colorScheme === 'dark' ? '#23272f' : '#fafdff',
       borderRadius: 12,
       padding: 18,
       marginBottom: 14,
-      elevation: 2,
+      elevation: colorScheme === 'dark' ? 0 : 2,
+      shadowColor: colorScheme === 'dark' ? 'transparent' : '#b2bec3',
+      shadowOpacity: colorScheme === 'dark' ? 0 : 0.08,
+      shadowRadius: 4,
     },
     cryptoName: {
       fontSize: 18,
       fontWeight: 'bold',
-      color: colorScheme === 'dark' ? '#fff' : '#222',
+      color: colorScheme === 'dark' ? '#fff' : '#181a20',
     },
     cryptoPrice: {
       fontSize: 16,
-      color: colorScheme === 'dark' ? '#f1c40f' : '#636e72',
+      color: colorScheme === 'dark' ? '#f1c40f' : '#2980ff',
       marginTop: 2,
     },
     bubble: {
@@ -211,11 +222,13 @@ const styles = (colorScheme: string) =>
       minWidth: 18,
       height: 18,
       borderRadius: 9,
-      backgroundColor: '#e74c3c',
+      backgroundColor: colorScheme === 'dark' ? '#e74c3c' : '#d35400',
       justifyContent: 'center',
       alignItems: 'center',
       paddingHorizontal: 4,
       zIndex: 1,
+      borderWidth: 1,
+      borderColor: colorScheme === 'dark' ? '#181a20' : '#fff',
     },
     bubbleText: {
       color: '#fff',

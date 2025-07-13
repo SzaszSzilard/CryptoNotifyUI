@@ -1,10 +1,10 @@
-import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { CryptoPrice } from '@/models/CryptoPrice';
+import { HttpService } from '@/services/httpService';
 import { FontAwesome } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, useColorScheme, View } from 'react-native';
+import { FlatList, KeyboardAvoidingView, StyleSheet, Text, TextInput, TouchableOpacity, useColorScheme, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 
@@ -15,45 +15,39 @@ export default function CryptoListScreen() {
   const [search, setSearch] = useState('');
   const colorScheme = useColorScheme() ?? 'light';
   const router = useRouter();
-
+  
   useFocusEffect(
     React.useCallback(() => {
       let intervalId: ReturnType<typeof setInterval>;
-
+      
       const fetchData = () => {
-        fetch('http://192.168.0.167:8080/api/crypto/list')
-          .then(res => res.json())
-          .then(data => {
-            const prices = data.map(CryptoPrice.fromJson).sort((a: CryptoPrice, b: CryptoPrice) => b.price - a.price);
-            setCryptos(prices.filter((crypto: CryptoPrice ) => crypto.price > 0));
-            setLoading(false);
-          })
-          .catch(err => {
-            setError(err.message || 'Unknown error');
-            setLoading(false);
-          });
+        HttpService.get<CryptoPrice[]>('crypto/list')
+        .then((data) => {
+          const prices = data.sort((a, b) => b.price - a.price);
+          setCryptos(prices.filter(crypto => crypto.price > 0));
+          setLoading(false);
+        })
+        .catch((err) => {
+          setLoading(false);
+          setError(err.message);
+        });
       };
-
+      
       fetchData();
       intervalId = setInterval(fetchData, 1000);
-
       return () => clearInterval(intervalId);
     }, [])
   );
-
-  const addToFavorites = (crypto: CryptoPrice) => {
-    alert(`Added ${crypto.symbol.replace('USDT', '/USD')} to favorites!`);
-  };
-
+  
   const notifyMe = (crypto: CryptoPrice) => {
     router.push({
-      pathname: '../screens/notificationTypes',
+      pathname: '../screens/notifications/list',
       params: { symbol: crypto.symbol },
     });
   };
-
+  
   const themedStyles = styles(colorScheme);
-
+  
   // Filter cryptos as user types
   const filteredCryptos = useMemo(() => {
     if (!search.trim()) return cryptos;
@@ -63,71 +57,66 @@ export default function CryptoListScreen() {
       crypto.symbol.replace('USDT', '/USD').toLowerCase().includes(lower)
     );
   }, [cryptos, search]);
-
+  
   if (loading) return <Text style={themedStyles.loadingText}>Loading...</Text>;
   if (error) return <Text style={themedStyles.errorText}>Error: {error}</Text>;
-
+  
   return (
     <SafeAreaView style={themedStyles.safeArea}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-      >
-        <ThemedView style={themedStyles.container}>
-          <ThemedView style={themedStyles.titleContainer}>
-            <ThemedText type="title">CryptoNotify</ThemedText>
-          </ThemedView>
-
-          {/* Search Input */}
-          <View style={themedStyles.inputRow}>
-            <TextInput
-              style={themedStyles.searchInput}
-              placeholder="Search crypto..."
-              placeholderTextColor={colorScheme === 'dark' ? '#b2bec3' : '#636e72'}
-              value={search}
-              onChangeText={setSearch}
-            />
-          </View>
-
-          <FlatList
-            data={filteredCryptos}
-            keyExtractor={crypto => crypto.symbol}
-            renderItem={({ item: crypto }) => {
-              const name = crypto.symbol.replace('USDT', '/USD');
-              return (
-                <TouchableOpacity
-                  style={themedStyles.itemRow}
-                  activeOpacity={0.85}
-                  onPress={() => notifyMe(crypto)}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={themedStyles.cryptoName}>{name}</Text>
-                    <Text style={themedStyles.cryptoPrice}>${crypto.price.toFixed(2)}</Text>
-                  </View>
-                  <FontAwesome
-                    name="bell"
-                    size={22}
-                    color={colorScheme === 'dark' ? '#87ceeb' : '#36525E'}
-                    style={{ marginLeft: 8 }}
-                  />
-                </TouchableOpacity>
-              );
-            }}
-            ListEmptyComponent={<Text style={themedStyles.emptyText}>No cryptos found.</Text>}
-            contentContainerStyle={{ paddingBottom: 24 }}
-            style={{ flex: 1 }}
+    <KeyboardAvoidingView style={themedStyles.keyboardAvoidingView}>
+    
+      <ThemedView style={themedStyles.container}>
+        <View style={themedStyles.inputRow}>
+          <TextInput
+            style={themedStyles.searchInput}
+            placeholder="Search crypto..."
+            placeholderTextColor={colorScheme === 'dark' ? '#b2bec3' : '#636e72'}
+            value={search}
+            onChangeText={setSearch}
           />
-        </ThemedView>
-      </KeyboardAvoidingView>
+        </View>
+        
+        <FlatList
+          data={filteredCryptos}
+          keyExtractor={crypto => crypto.symbol}
+          renderItem={({ item: crypto }) => {
+            const name = crypto.symbol.replace('USDT', '/USD');
+            return (
+              <TouchableOpacity
+              style={themedStyles.itemRow}
+              activeOpacity={0.85}
+              onPress={() => notifyMe(crypto)}
+              >
+                <View style={{ flex: 1 }}>
+                <Text style={themedStyles.cryptoName}>{name}</Text>
+                <Text style={themedStyles.cryptoPrice}>${crypto.price.toFixed(2)}</Text>
+                </View>
+                <FontAwesome
+                name="bell"
+                size={22}
+                color={colorScheme === 'dark' ? '#87ceeb' : '#36525E'}
+                style={{ marginLeft: 8 }}
+                />
+              </TouchableOpacity>
+            );
+        }}
+        
+        ListEmptyComponent={<Text style={themedStyles.emptyText}>No cryptos found.</Text>}
+        contentContainerStyle={{ paddingBottom: 24 }}
+        style={{ flex: 1 }}
+        />
+      </ThemedView>
+    </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const CARD_HEIGHT = 64;
-
 const styles = (colorScheme: string | null) =>
   StyleSheet.create({
+    keyboardAvoidingView: {
+      flex: 1,
+    },
     safeArea: {
       flex: 1,
       backgroundColor: colorScheme === 'dark' ? '#181a20' : '#f5f6fa',
@@ -205,4 +194,4 @@ const styles = (colorScheme: string | null) =>
       textAlign: 'center',
       marginTop: 32,
     },
-  });
+});

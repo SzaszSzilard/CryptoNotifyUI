@@ -2,7 +2,7 @@ import { getApp } from '@react-native-firebase/app';
 import { getMessaging, getToken } from '@react-native-firebase/messaging';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, useColorScheme, View } from 'react-native';
+import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, useColorScheme, View } from 'react-native';
 
 type Mode = 'aboveBelow' | 'percent';
 
@@ -93,6 +93,7 @@ export default function NotificationSetup() {
 
   // Elegant above/below selector
   function AboveBelowSelector() {
+    const isPercent = mode === 'percent';
     return (
       <View style={themedStyles.selectorRow}>
         <TouchableOpacity
@@ -106,7 +107,9 @@ export default function NotificationSetup() {
           <Text style={[
             themedStyles.selectorText,
             isAbove ? themedStyles.selectorTextActive : themedStyles.selectorTextInactive,
-          ]}>Above</Text>
+          ]}>
+            {isPercent ? 'Rises' : 'Above'}
+          </Text>
         </TouchableOpacity>
         <View style={themedStyles.selectorDivider} />
         <TouchableOpacity
@@ -120,7 +123,9 @@ export default function NotificationSetup() {
           <Text style={[
             themedStyles.selectorText,
             !isAbove ? themedStyles.selectorTextActive : themedStyles.selectorTextInactive,
-          ]}>Below</Text>
+          ]}>
+            {isPercent ? 'Falls' : 'Below'}
+          </Text>
         </TouchableOpacity>
       </View>
     );
@@ -129,16 +134,15 @@ export default function NotificationSetup() {
   return (
     <View style={themedStyles.safeArea}>
       <View style={themedStyles.container}>
-        <View style={themedStyles.spacer} />
         <Text style={themedStyles.title}>
           {mode === 'percent' ? 'Percentage Change Notification' : 'Above/Below Notification'}
         </Text>
-        <Text style={themedStyles.subtitle}>
-          for {typeof symbol === 'string' ? symbol.replace('USDT', '/USD') : ''}
+        <Text style={themedStyles.symbolPriceLine}>
+          {typeof symbol === 'string'
+            ? `${symbol.replace('USDT', '/USD')}  ${currentPrice !== null ? `$${currentPrice}` : '...'}`
+            : ''}
         </Text>
-        <Text style={themedStyles.label}>
-          Current Price: {currentPrice !== null ? `$${currentPrice}` : <ActivityIndicator />}
-        </Text>
+        <View style={{ height: 18 }} />
         {mode === 'aboveBelow' && (
           <>
             <Text style={themedStyles.label}>Target Price</Text>
@@ -147,8 +151,9 @@ export default function NotificationSetup() {
               keyboardType="numeric"
               value={targetPrice}
               onChangeText={setTargetPrice}
-              placeholder="Enter target price"
+              placeholder="66.66"
               placeholderTextColor={colorScheme === 'dark' ? '#b2bec3' : '#636e72'}
+              textAlign="left"
             />
           </>
         )}
@@ -160,8 +165,9 @@ export default function NotificationSetup() {
               keyboardType="numeric"
               value={percentage}
               onChangeText={setPercentage}
-              placeholder="Enter percentage"
+              placeholder="66.66"
               placeholderTextColor={colorScheme === 'dark' ? '#b2bec3' : '#636e72'}
+              textAlign="left"
             />
           </>
         )}
@@ -173,7 +179,6 @@ export default function NotificationSetup() {
         >
           <Text style={themedStyles.buttonText}>{loading ? 'Submitting...' : 'Submit'}</Text>
         </TouchableOpacity>
-        <View style={themedStyles.spacer} />
       </View>
     </View>
   );
@@ -188,29 +193,38 @@ const styles = (colorScheme: string | null) =>
     container: {
       flex: 1,
       padding: 24,
-      justifyContent: 'space-between',
-    },
-    spacer: {
-      flex: 0.1,
+      justifyContent: 'flex-start',
     },
     title: {
-      fontSize: 22,
+      fontSize: 26,
       fontWeight: 'bold',
       color: colorScheme === 'dark' ? '#fff' : '#222',
-      marginBottom: 8,
-      textAlign: 'center',
+      marginBottom: 4,
+      textAlign: 'left',
     },
     subtitle: {
-      fontSize: 16,
+      fontSize: 18,
       color: colorScheme === 'dark' ? '#b2bec3' : '#636e72',
-      marginBottom: 18,
-      textAlign: 'center',
+      marginBottom: 6,
+      textAlign: 'left',
+    },
+    currentPriceLabel: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: colorScheme === 'dark' ? '#b2bec3' : '#2980ff',
+      marginBottom: 12,
+      textAlign: 'left',
+    },
+    currentPriceValue: {
+      fontSize: 22,
+      fontWeight: 'bold',
+      color: colorScheme === 'dark' ? '#f1c40f' : '#222',
     },
     label: {
-      fontSize: 16,
+      fontSize: 17,
       color: colorScheme === 'dark' ? '#b2bec3' : '#636e72',
-      marginBottom: 8,
-      textAlign: 'center',
+      marginBottom: 6,
+      textAlign: 'left',
     },
     input: {
       height: 48,
@@ -218,17 +232,17 @@ const styles = (colorScheme: string | null) =>
       borderColor: '#ccc',
       borderRadius: 10,
       paddingHorizontal: 16,
-      fontSize: 18,
+      fontSize: 19,
       color: colorScheme === 'dark' ? '#fff' : '#222',
       backgroundColor: colorScheme === 'dark' ? '#23272f' : '#fff',
-      marginBottom: 18,
-      textAlign: 'center',
+      marginBottom: 14,
+      textAlign: 'left',
     },
     selectorRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: 24,
+      marginBottom: 18,
       borderRadius: 12,
       overflow: 'hidden',
       backgroundColor: colorScheme === 'dark' ? '#23272f' : '#eaf0fb',
@@ -244,12 +258,12 @@ const styles = (colorScheme: string | null) =>
       paddingVertical: 0,
     },
     selectorActiveAbove: {
-      backgroundColor: '#27ae60', // Green
+      backgroundColor: '#27ae60',
       borderTopLeftRadius: 12,
       borderBottomLeftRadius: 12,
     },
     selectorActiveBelow: {
-      backgroundColor: '#e74c3c', // Red
+      backgroundColor: '#e74c3c',
       borderTopRightRadius: 12,
       borderBottomRightRadius: 12,
     },
@@ -262,7 +276,7 @@ const styles = (colorScheme: string | null) =>
       backgroundColor: colorScheme === 'dark' ? '#353b48' : '#b2bec3',
     },
     selectorText: {
-      fontSize: 18,
+      fontSize: 19,
       fontWeight: 'bold',
       color: '#fff',
     },
@@ -278,11 +292,18 @@ const styles = (colorScheme: string | null) =>
       borderRadius: 10,
       padding: 18,
       alignItems: 'center',
-      marginTop: 12,
+      marginTop: 10,
     },
     buttonText: {
       color: colorScheme === 'dark' ? '#222' : '#fff',
-      fontSize: 20,
+      fontSize: 21,
       fontWeight: 'bold',
+    },
+    symbolPriceLine: {
+      fontSize: 22,
+      fontWeight: 'bold',
+      color: colorScheme === 'dark' ? '#f1c40f' : '#222',
+      textAlign: 'left',
+      marginBottom: 0,
     },
   });
