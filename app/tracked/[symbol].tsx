@@ -79,7 +79,7 @@ export default function TrackedNotifications() {
       <TouchableOpacity
         style={themedStyles.newButton}
         onPress={() => {
-          router.push({ pathname: '../screens/notificationTypes', params: { symbol } });
+          router.push({ pathname: '../screens/notifications/aboveBelow', params: { symbol } });
         }}
       >
         <Text style={themedStyles.newButtonText}>

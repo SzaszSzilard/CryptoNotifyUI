@@ -4,22 +4,12 @@ import messaging from '@react-native-firebase/messaging';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View, useColorScheme } from 'react-native';
+import { CryptoPrice } from '@/models/CryptoPrice';
+import { Notification } from '@/models/Notification';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { useRouter } from 'expo-router';
-
-type Notification = {
-  id: number;
-  symbol: string;
-  price: number;
-  type: string;
-};
-
-type CryptoPrice = {
-  symbol: string;
-  price: number;
-};
 
 export default function HomeScreen() {
   const router = useRouter();

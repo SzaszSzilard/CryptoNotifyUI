@@ -154,7 +154,7 @@ export default function NotificationSetup() {
               keyboardType="numeric"
               value={targetPrice}
               onChangeText={setTargetPrice}
-              placeholder="66.66"
+              placeholder="66.66% "
               placeholderTextColor={colorScheme === 'dark' ? '#b2bec3' : '#636e72'}
               textAlign="left"
             />
