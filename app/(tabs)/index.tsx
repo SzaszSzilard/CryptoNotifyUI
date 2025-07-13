@@ -1,8 +1,9 @@
+import { HttpService } from '@/services/httpService';
 import { FontAwesome } from '@expo/vector-icons';
 import messaging from '@react-native-firebase/messaging';
-import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View, useColorScheme } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View, useColorScheme } from 'react-native';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -25,9 +26,8 @@ export default function HomeScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const [userId, setUserId] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [cryptoPrices, setCryptoPrices] = useState<CryptoPrice[]>([]);
+  const [cryptos, setCryptos] = useState<CryptoPrice[]>([]);
   const [loading, setLoading] = useState(true);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Get FCM token as userId
   useEffect(() => {
@@ -39,46 +39,43 @@ export default function HomeScreen() {
 
   // Fetch notifications every time the screen is focused
   useFocusEffect(
-    React.useCallback(() => {
-      if (!userId) return;
-      setLoading(true);
-      fetch(`http://192.168.0.167:8080/api/user/${userId}/notifications`)
-        .then(res => res.json())
-        .then((notifs: Notification[] | Notification) => {
-          const notifArr = Array.isArray(notifs) ? notifs : [notifs];
-          setNotifications(notifArr);
-          setLoading(false);
-        })
-        .catch(() => {
+    useCallback(() => {
+      let intervalId: ReturnType<typeof setInterval> | null = null;
+
+      // Fetch notifications first
+      const fetchData = async () => {       
+        try {
+          const notifications = await HttpService.get<Notification[]>(`user/${userId}/notifications`);
+          setNotifications(notifications);
+
+          if (notifications.length) {
+            const trackedSymbols = notifications.map(n => n.symbol);
+            const fetchPrices = () => {
+              HttpService.get<CryptoPrice[]>('crypto/list')
+                .then((cryptos) => {
+                  setCryptos(cryptos
+                    .filter(c => trackedSymbols.includes(c.symbol))
+                    .sort((a, b) => b.price - a.price)
+                  );
+                  setLoading(false);
+                })
+              };
+
+            fetchPrices();
+            intervalId = setInterval(fetchPrices, 1000);
+          }
+        } catch {
           setNotifications([]);
+          setCryptos([]);
           setLoading(false);
-        });
+        }
+      };
+
+      fetchData();
+      intervalId = setInterval(fetchData, 1000);
+      return () => clearInterval(intervalId);
     }, [userId])
   );
-
-  // Fetch prices every second for tracked symbols
-  useEffect(() => {
-    if (!notifications.length) return;
-
-    const fetchPrices = () => {
-      fetch('http://192.168.0.167:8080/api/crypto/list')
-        .then(res => res.json())
-        .then((prices: CryptoPrice[]) => {
-          const trackedSymbols = notifications.map(n => n.symbol);
-          setCryptoPrices(
-            prices.filter(c => trackedSymbols.includes(c.symbol))
-          );
-        })
-        .catch(() => {});
-    };
-
-    fetchPrices();
-    intervalRef.current = setInterval(fetchPrices, 1000);
-
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [notifications]);
 
   const themedStyles = styles(colorScheme);
 
@@ -96,12 +93,11 @@ export default function HomeScreen() {
         <TouchableOpacity
           onPress={() => router.push('/crypto-list')}
           style={{ alignItems: 'center' }}
-          activeOpacity={0.8}
         >
           <FontAwesome name="bell" size={48} color="#87ceeb" style={{ marginBottom: 24 }} />
           <Text style={themedStyles.emptyTitle}>Go set some notifications!</Text>
           <Text style={themedStyles.emptySubtitle}>
-            All cryptos you track will appear here once you add a notification.
+            All cryptos you track will appear here once you set a notification.
           </Text>
         </TouchableOpacity>
       </View>
@@ -116,7 +112,7 @@ export default function HomeScreen() {
 
   return (
     <FlatList
-      data={cryptoPrices}
+      data={cryptos}
       keyExtractor={item => item.symbol}
       ListHeaderComponent={
         <>
@@ -137,7 +133,7 @@ export default function HomeScreen() {
             <Text style={themedStyles.cryptoName}>
               {item.symbol.replace('USDT', '/USD')}
             </Text>
-            <Text style={themedStyles.cryptoPrice}>${item.price}</Text>
+            <Text style={themedStyles.cryptoPrice}>${item.price.toFixed(2)}</Text>
           </View>
           <View style={{ position: 'relative', justifyContent: 'center', alignItems: 'center' }}>
             <FontAwesome name="bell" size={24} color="#87ceeb" />
