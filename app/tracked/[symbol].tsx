@@ -38,7 +38,6 @@ export default function TrackedNotifications() {
   );
 
   const handleDelete = (notif: Notification & { percentage?: number }) => {
-    const deleteUrl = `http://192.168.0.167:8080/api/notification/`;
     Alert.alert('Delete Notification', 'Are you sure?', [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -56,14 +55,11 @@ export default function TrackedNotifications() {
           if (notif.percentage !== undefined && notif.percentage !== null) {
             body.percentage = notif.percentage;
           }
-          fetch(deleteUrl, {
-            method: 'DELETE',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(body),
+
+          HttpService.delete<Notification>('notification/', body)
+          .then(() => {
+            setNotifications(notifications.filter(n => n.id !== notif.id));
           })
-            .then(() => setNotifications(notifications.filter(n => n.id !== notif.id)));
         },
       },
     ]);
