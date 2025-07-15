@@ -1,15 +1,11 @@
+import { Notification } from '@/models/Notification';
+import { HttpService } from '@/services/httpService';
 import { FontAwesome } from '@expo/vector-icons';
 import messaging from '@react-native-firebase/messaging';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity, View, useColorScheme } from 'react-native';
 
-type Notification = {
-  id: number;
-  symbol: string;
-  price: number;
-  type: string;
-};
 
 export default function TrackedNotifications() {
   const { symbol } = useLocalSearchParams<{ symbol: string }>();
@@ -31,14 +27,13 @@ export default function TrackedNotifications() {
     React.useCallback(() => {
       if (!userId || !symbol) return;
       setLoading(true);
-      fetch(`http://192.168.0.167:8080/api/user/${userId}/notifications`)
-        .then(res => res.json())
-        .then((notifs: Notification[] | Notification) => {
-          const notifArr = Array.isArray(notifs) ? notifs : [notifs];
-          setNotifications(notifArr.filter(n => n.symbol === symbol));
-          setLoading(false);
-        })
-        .catch(() => setLoading(false));
+
+      HttpService.get<Notification[]>(`user/${userId}/notifications`)
+      .then((notifications) => {
+        setNotifications(notifications.filter(n => n.symbol === symbol));
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
     }, [userId, symbol])
   );
 

@@ -72,20 +72,11 @@ export default function NotificationSetup() {
     }
 
     try {
-      const res = await fetch('http://192.168.0.167:8080/api/notification/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (res.ok) {
-        Alert.alert('Success', 'Notification set!');
-        router.back();
-      } else {
-        console.log(body, res.status, await res.text());
-        Alert.alert('Error', 'Failed to set notification.');
-      }
-    } catch {
-      Alert.alert('Error', 'Network error.');
+      await HttpService.post<void>(`notification/`, body);
+      Alert.alert('Success', 'Notification set!');
+    } catch(e) {
+      console.error('Network error:', e);
+      Alert.alert('Error', 'Failed to set notification.');
     }
     setLoading(false);
   };

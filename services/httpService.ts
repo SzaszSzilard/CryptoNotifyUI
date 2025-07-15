@@ -10,7 +10,7 @@ export class HttpService {
   }
 
   static async post<T>(url: string, body: any): Promise<T> {
-    const res = await fetch(url, {
+    const res = await fetch(API_BASE_URL + url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
