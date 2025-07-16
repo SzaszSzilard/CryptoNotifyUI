@@ -4,7 +4,7 @@ import { HttpService } from '@/services/httpService';
 import { FontAwesome } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { FlatList, KeyboardAvoidingView, StyleSheet, Text, TextInput, TouchableOpacity, useColorScheme, View } from 'react-native';
+import { ActivityIndicator, FlatList, KeyboardAvoidingView, StyleSheet, Text, TextInput, TouchableOpacity, useColorScheme, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 
@@ -29,7 +29,7 @@ export default function CryptoListScreen() {
         })
         .catch((err) => {
           setLoading(false);
-          setError(err.message);
+          console.log('Error fetching crypto list:', err);
         });
       };
       
@@ -39,16 +39,8 @@ export default function CryptoListScreen() {
     }, [])
   );
   
-  const notifyMe = (crypto: CryptoPrice) => {
-    router.push({
-      pathname: '../screens/notifications/list',
-      params: { symbol: crypto.symbol },
-    });
-  };
-  
   const themedStyles = styles(colorScheme);
   
-  // Filter cryptos as user types
   const filteredCryptos = useMemo(() => {
     if (!search.trim()) return cryptos;
     const lower = search.trim().toLowerCase();
@@ -58,8 +50,17 @@ export default function CryptoListScreen() {
     );
   }, [cryptos, search]);
   
-  if (loading) return <Text style={themedStyles.loadingText}>Loading...</Text>;
-  if (error) return <Text style={themedStyles.errorText}>Error: {error}</Text>;
+  if (loading) {
+      return (
+        <View style={themedStyles.centered}>
+          <ActivityIndicator size="large" color={colorScheme === 'dark' ? '#87ceeb' : '#36525E'} />
+        </View>
+      );
+    }
+
+  if (error) {
+    return <Text style={themedStyles.errorText}>Network Error</Text>;
+  }
   
   return (
     <SafeAreaView style={themedStyles.safeArea}>
@@ -80,12 +81,15 @@ export default function CryptoListScreen() {
           data={filteredCryptos}
           keyExtractor={crypto => crypto.symbol}
           renderItem={({ item: crypto }) => {
-            const name = crypto.symbol.replace('USDT', '/USD');
+            const name = crypto.symbol.replace('USDT', '/USD'); 
             return (
               <TouchableOpacity
               style={themedStyles.itemRow}
               activeOpacity={0.85}
-              onPress={() => notifyMe(crypto)}
+              onPress={() => router.push({
+                pathname: '../screens/notifications/list',
+                params: { symbol: crypto.symbol },
+              })}
               >
                 <View style={{ flex: 1 }}>
                 <Text style={themedStyles.cryptoName}>{name}</Text>

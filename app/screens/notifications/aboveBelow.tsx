@@ -74,6 +74,7 @@ export default function NotificationSetup() {
     try {
       await HttpService.post<void>(`notification/`, body);
       Alert.alert('Success', 'Notification set!');
+      router.replace({ pathname: '/tracked/[symbol]', params: { symbol } });
     } catch(e) {
       console.error('Network error:', e);
       Alert.alert('Error', 'Failed to set notification.');
