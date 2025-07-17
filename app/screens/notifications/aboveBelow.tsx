@@ -19,7 +19,7 @@ export default function NotificationSetup() {
   const router = useRouter();
 
 
-  // Poll current price every second
+  // Poll current price every second`
   useEffect(() => {
     if (!symbol) return;
     const interval = setInterval(() => 

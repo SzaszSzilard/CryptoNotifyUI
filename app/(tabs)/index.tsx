@@ -1,14 +1,15 @@
+import { CryptoPrice } from '@/models/CryptoPrice';
+import { Notification } from '@/models/Notification';
 import { HttpService } from '@/services/httpService';
 import { FontAwesome } from '@expo/vector-icons';
 import messaging from '@react-native-firebase/messaging';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View, useColorScheme } from 'react-native';
-import { CryptoPrice } from '@/models/CryptoPrice';
-import { Notification } from '@/models/Notification';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { CryptoCard } from '@/components/ui/CNF/CryptoCard';
 import { useRouter } from 'expo-router';
 
 export default function HomeScreen() {
@@ -94,7 +95,6 @@ export default function HomeScreen() {
     );
   }
 
-  // Count notifications per symbol
   const notifCount: Record<string, number> = {};
   notifications.forEach(n => {
     notifCount[n.symbol] = (notifCount[n.symbol] || 0) + 1;
@@ -103,7 +103,7 @@ export default function HomeScreen() {
   return (
     <FlatList
       data={cryptos}
-      keyExtractor={item => item.symbol}
+      keyExtractor={crypto => crypto.symbol}
       ListHeaderComponent={
         <>
           <ThemedView style={themedStyles.titleContainer}>
@@ -113,27 +113,8 @@ export default function HomeScreen() {
           </ThemedView>
         </>
       }
-      renderItem={({ item }) => (
-        <TouchableOpacity
-          style={themedStyles.cryptoCard}
-          activeOpacity={0.85}
-          onPress={() => router.push({ pathname: '/tracked/[symbol]', params: { symbol: item.symbol } })}
-        >
-          <View style={{ flex: 1 }}>
-            <Text style={themedStyles.cryptoName}>
-              {item.symbol.replace('USDT', '/USD')}
-            </Text>
-            <Text style={themedStyles.cryptoPrice}>${item.price.toFixed(2)}</Text>
-          </View>
-          <View style={{ position: 'relative', justifyContent: 'center', alignItems: 'center' }}>
-            <FontAwesome name="bell" size={24} color="#87ceeb" />
-            {notifCount[item.symbol] > 0 && (
-              <View style={themedStyles.bubble}>
-                <Text style={themedStyles.bubbleText}>{notifCount[item.symbol]}</Text>
-              </View>
-            )}
-          </View>
-        </TouchableOpacity>
+      renderItem={({ item: crypto }) => (
+        <CryptoCard crypto={crypto} notifCount={notifCount} />
       )}
       contentContainerStyle={{ paddingBottom: 24, paddingHorizontal: 16 }}
     />

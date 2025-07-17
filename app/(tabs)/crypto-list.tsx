@@ -1,10 +1,10 @@
 import { ThemedView } from '@/components/ThemedView';
+import { CryptoCard } from '@/components/ui/CNF/CryptoCard';
 import { CryptoPrice } from '@/models/CryptoPrice';
 import { HttpService } from '@/services/httpService';
-import { FontAwesome } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, KeyboardAvoidingView, StyleSheet, Text, TextInput, TouchableOpacity, useColorScheme, View } from 'react-native';
+import { ActivityIndicator, FlatList, KeyboardAvoidingView, StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 
@@ -15,6 +15,7 @@ export default function CryptoListScreen() {
   const [search, setSearch] = useState('');
   const colorScheme = useColorScheme() ?? 'light';
   const router = useRouter();
+  const notifCount: Record<string, number> = {};
   
   useFocusEffect(
     React.useCallback(() => {
@@ -83,27 +84,29 @@ export default function CryptoListScreen() {
           renderItem={({ item: crypto }) => {
             const name = crypto.symbol.replace('USDT', '/USD'); 
             return (
-              <TouchableOpacity
-              style={themedStyles.itemRow}
-              activeOpacity={0.85}
-              onPress={() => router.push({
-                pathname: '../screens/notifications/list',
-                params: { symbol: crypto.symbol },
-              })}
-              >
-                <View style={{ flex: 1 }}>
-                <Text style={themedStyles.cryptoName}>{name}</Text>
-                <Text style={themedStyles.cryptoPrice}>${crypto.price.toFixed(2)}</Text>
-                </View>
-                <FontAwesome
-                name="bell"
-                size={22}
-                color={colorScheme === 'dark' ? '#87ceeb' : '#36525E'}
-                style={{ marginLeft: 8 }}
-                />
-              </TouchableOpacity>
+                <CryptoCard crypto={crypto} notifCount={notifCount} />
+              // <TouchableOpacity
+              // style={themedStyles.itemRow}
+              // activeOpacity={0.85}
+              // onPress={() => router.push({
+              //   pathname: '../screens/notifications/list',
+              //   params: { symbol: crypto.symbol },
+              // })}
+              // >
+              //   <View style={{ flex: 1 }}>
+              //   <Text style={themedStyles.cryptoName}>{name}</Text>
+              //   <Text style={themedStyles.cryptoPrice}>${crypto.price > 1 ? crypto.price.toFixed(2) : crypto.price.toFixed(8)}</Text>
+              //   </View>
+              //   <FontAwesome
+              //   name="bell"
+              //   size={22}
+              //   color={colorScheme === 'dark' ? '#87ceeb' : '#36525E'}
+              //   style={{ marginLeft: 8 }}
+              //   />
+              // </TouchableOpacity>
             );
-        }}
+        }
+      }
         
         ListEmptyComponent={<Text style={themedStyles.emptyText}>No cryptos found.</Text>}
         contentContainerStyle={{ paddingBottom: 24 }}
@@ -118,6 +121,11 @@ export default function CryptoListScreen() {
 const CARD_HEIGHT = 64;
 const styles = (colorScheme: string | null) =>
   StyleSheet.create({
+    centered: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
     keyboardAvoidingView: {
       flex: 1,
     },
