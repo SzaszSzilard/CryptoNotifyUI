@@ -1,4 +1,4 @@
-import { CryptoPrice } from '@/models/CryptoPrice';
+import { useCryptoData } from '@/components/ui/CNF/RealTimeCrypto';
 import { Notification } from '@/models/Notification';
 import { HttpService } from '@/services/httpService';
 import { FontAwesome } from '@expo/vector-icons';
@@ -13,14 +13,14 @@ import { CryptoCard } from '@/components/ui/CNF/CryptoCard';
 import { useRouter } from 'expo-router';
 
 export default function HomeScreen() {
+  const cryptos = useCryptoData();
+
   const router = useRouter();
   const colorScheme = useColorScheme() ?? 'light';
   const [userId, setUserId] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [cryptos, setCryptos] = useState<CryptoPrice[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Get FCM token as userId
   useEffect(() => {
     messaging()
       .getToken()
@@ -28,38 +28,15 @@ export default function HomeScreen() {
       .catch(() => setUserId(null));
   }, []);
 
-  // Fetch notifications every time the screen is focused
   useFocusEffect(
     useCallback(() => {
       let intervalId: ReturnType<typeof setInterval> | null = null;
 
-      // Fetch notifications first
       const fetchData = async () => {       
-        try {
-          const notifications = await HttpService.get<Notification[]>(`user/${userId}/notifications`);
-          setNotifications(notifications);
-
-          if (notifications.length) {
-            const trackedSymbols = notifications.map(n => n.symbol);
-            const fetchPrices = () => {
-              HttpService.get<CryptoPrice[]>('crypto/list')
-                .then((cryptos) => {
-                  setCryptos(cryptos
-                    .filter(c => trackedSymbols.includes(c.symbol))
-                    .sort((a, b) => b.price - a.price)
-                  );
-                  setLoading(false);
-                })
-              };
-
-            fetchPrices();
-            intervalId = setInterval(fetchPrices, 1000);
-          }
-        } catch {
-          setNotifications([]);
-          setCryptos([]);
-          setLoading(false);
-        }
+        HttpService.get<Notification[]>(`user/${userId}/notifications`)
+        .then(setNotifications)
+        .catch((e) => console.error('Failed to load notifications', e))
+        .finally(() => setLoading(false));
       };
 
       fetchData();
@@ -102,7 +79,7 @@ export default function HomeScreen() {
 
   return (
     <FlatList
-      data={cryptos}
+      data={cryptos.filter(crypto => notifCount[crypto.symbol] > 0)}
       keyExtractor={crypto => crypto.symbol}
       ListHeaderComponent={
         <>

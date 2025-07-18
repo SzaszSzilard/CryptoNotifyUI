@@ -4,6 +4,7 @@ import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import CryptoListScreen from './crypto-list';
 import HomeScreen from './index';
+import { CryptoDataProvider } from '@/components/ui/CNF/RealTimeCrypto';
 
 const TopTabs = createMaterialTopTabNavigator();
 
@@ -11,6 +12,7 @@ export default function TabLayout() {
   const colorScheme = useColorScheme();
 
   return (
+    <CryptoDataProvider>
     <TopTabs.Navigator
       screenOptions={{
         swipeEnabled: true,
@@ -40,5 +42,6 @@ export default function TabLayout() {
         }}
       />
     </TopTabs.Navigator>
+    </CryptoDataProvider>
   );
 }
