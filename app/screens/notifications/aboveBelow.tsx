@@ -9,6 +9,8 @@ import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, useColorScheme, V
 type Mode = 'aboveBelow' | 'percent';
 
 export default function NotificationSetup() {
+  const [userId, setUserId] = useState<string | null>(null);
+  
   const { symbol, mode = 'aboveBelow' } = useLocalSearchParams<{ symbol?: string; mode?: Mode }>();
   const colorScheme = useColorScheme() ?? 'light';
   const [crypto, setCrypto] = useState<CryptoPrice | null>(null);
@@ -18,8 +20,12 @@ export default function NotificationSetup() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-
-  // Poll current price every second`
+    useEffect(() => {
+      getToken(getMessaging(getApp()))
+        .then(token => setUserId(token))
+        .catch(() => setUserId(null));
+    }, []);
+    
   useEffect(() => {
     if (!symbol) return;
     const interval = setInterval(() => 
@@ -30,7 +36,6 @@ export default function NotificationSetup() {
     return () => clearInterval(interval);
   }, [symbol]);
 
-  // When mode is percent, always keep targetPrice in sync with currentPrice
   useEffect(() => {
     if (mode === 'percent' && crypto?.price !== null) {
       setTargetPrice(crypto?.price || null);
@@ -38,9 +43,7 @@ export default function NotificationSetup() {
   }, [mode, crypto?.price]);
 
   const handleSubmit = async () => {
-    const userToken = await getToken(getMessaging(getApp()));
-
-    if (!userToken) {
+    if (!userId) {
       Alert.alert('User ID error', 'Could not retrieve user ID.');
       return;
     }
@@ -63,7 +66,7 @@ export default function NotificationSetup() {
 
     const body: any = {
       type,
-      userId: userToken,
+      userId: userId,
       symbol,
       price: targetPrice,
     };

@@ -1,12 +1,9 @@
 import { ThemedView } from '@/components/ThemedView';
 import { CryptoCard } from '@/components/ui/CNF/CryptoCard';
-import { CryptoPrice } from '@/models/CryptoPrice';
-import { HttpService } from '@/services/httpService';
-import { useFocusEffect, useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, KeyboardAvoidingView, StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCryptoData } from '@/components/ui/CNF/RealTimeCrypto';
+import React, { useMemo, useState } from 'react';
+import { FlatList, KeyboardAvoidingView, StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 
 export default function CryptoListScreen() {
@@ -29,7 +26,7 @@ export default function CryptoListScreen() {
 
   return (
     <SafeAreaView style={themedStyles.safeArea}>
-      <KeyboardAvoidingView style={themedStyles.keyboardAvoidingView}>
+      <KeyboardAvoidingView style={{ flex: 1 }}>
         <ThemedView style={themedStyles.container}>
           <View style={themedStyles.inputRow}>
             <TextInput
@@ -58,14 +55,6 @@ export default function CryptoListScreen() {
   const CARD_HEIGHT = 64;
   const styles = (colorScheme: string | null) =>
     StyleSheet.create({
-      centered: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-      },
-      keyboardAvoidingView: {
-        flex: 1,
-      },
       safeArea: {
         flex: 1,
         backgroundColor: colorScheme === 'dark' ? '#181a20' : '#f5f6fa',
@@ -73,11 +62,6 @@ export default function CryptoListScreen() {
       container: {
         flex: 1,
         padding: 16,
-      },
-      titleContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 16,
       },
       inputRow: {
         marginBottom: 16,
@@ -93,53 +77,8 @@ export default function CryptoListScreen() {
         backgroundColor: colorScheme === 'dark' ? '#23272f' : '#fff',
         fontWeight: 'normal',
       },
-      itemRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: colorScheme === 'dark' ? '#23272f' : '#fff',
-        borderRadius: 10,
-        padding: 12,
-        marginBottom: 10,
-        height: CARD_HEIGHT,
-        shadowColor: colorScheme === 'dark' ? '#000' : '#aaa',
-        shadowOpacity: 0.07,
-        shadowRadius: 4,
-        elevation: 2,
-      },
-      cryptoName: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: colorScheme === 'dark' ? '#fff' : '#222',
-      },
-      cryptoPrice: {
-        fontSize: 15,
-        color: colorScheme === 'dark' ? '#b2bec3' : '#636e72',
-        marginTop: 2,
-      },
-      iconButton: {
-        paddingHorizontal: 10,
-        alignItems: 'center',
-        justifyContent: 'center',
-      },
-      verticalDivider: {
-        width: 1,
-        height: 32,
-        backgroundColor: colorScheme === 'dark' ? '#353b48' : '#dfe4ea',
-        marginHorizontal: 8,
-        borderRadius: 1,
-      },
       emptyText: {
         color: colorScheme === 'dark' ? '#b2bec3' : '#636e72',
-        textAlign: 'center',
-        marginTop: 32,
-      },
-      loadingText: {
-        color: colorScheme === 'dark' ? '#fff' : '#222',
-        textAlign: 'center',
-        marginTop: 32,
-      },
-      errorText: {
-        color: '#e74c3c',
         textAlign: 'center',
         marginTop: 32,
       },

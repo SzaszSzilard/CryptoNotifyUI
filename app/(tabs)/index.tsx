@@ -2,7 +2,8 @@ import { useCryptoData } from '@/components/ui/CNF/RealTimeCrypto';
 import { Notification } from '@/models/Notification';
 import { HttpService } from '@/services/httpService';
 import { FontAwesome } from '@expo/vector-icons';
-import messaging from '@react-native-firebase/messaging';
+import { getApp } from '@react-native-firebase/app';
+import { getMessaging, getToken } from '@react-native-firebase/messaging';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View, useColorScheme } from 'react-native';
@@ -13,17 +14,16 @@ import { CryptoCard } from '@/components/ui/CNF/CryptoCard';
 import { useRouter } from 'expo-router';
 
 export default function HomeScreen() {
+  const [userId, setUserId] = useState<string | null>(null);
   const cryptos = useCryptoData();
 
   const router = useRouter();
   const colorScheme = useColorScheme() ?? 'light';
-  const [userId, setUserId] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    messaging()
-      .getToken()
+    getToken(getMessaging(getApp()))
       .then(token => setUserId(token))
       .catch(() => setUserId(null));
   }, []);
@@ -148,36 +148,5 @@ const styles = (colorScheme: string) =>
       shadowColor: colorScheme === 'dark' ? 'transparent' : '#b2bec3',
       shadowOpacity: colorScheme === 'dark' ? 0 : 0.08,
       shadowRadius: 4,
-    },
-    cryptoName: {
-      fontSize: 18,
-      fontWeight: 'bold',
-      color: colorScheme === 'dark' ? '#fff' : '#181a20',
-    },
-    cryptoPrice: {
-      fontSize: 16,
-      color: colorScheme === 'dark' ? '#f1c40f' : '#2980ff',
-      marginTop: 2,
-    },
-    bubble: {
-      position: 'absolute',
-      top: -6,
-      right: -6,
-      minWidth: 18,
-      height: 18,
-      borderRadius: 9,
-      backgroundColor: colorScheme === 'dark' ? '#e74c3c' : '#d35400',
-      justifyContent: 'center',
-      alignItems: 'center',
-      paddingHorizontal: 4,
-      zIndex: 1,
-      borderWidth: 1,
-      borderColor: colorScheme === 'dark' ? '#181a20' : '#fff',
-    },
-    bubbleText: {
-      color: '#fff',
-      fontSize: 12,
-      fontWeight: 'bold',
-      textAlign: 'center',
     },
   });
