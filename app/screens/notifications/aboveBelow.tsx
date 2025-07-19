@@ -1,3 +1,4 @@
+import { useCryptoData } from '@/components/ui/CNF/RealTimeCrypto';
 import { CryptoPrice } from '@/models/CryptoPrice';
 import { HttpService } from '@/services/httpService';
 import { getApp } from '@react-native-firebase/app';
@@ -10,6 +11,7 @@ type Mode = 'aboveBelow' | 'percent';
 
 export default function NotificationSetup() {
   const [userId, setUserId] = useState<string | null>(null);
+  const cryptos = useCryptoData();
   
   const { symbol, mode = 'aboveBelow' } = useLocalSearchParams<{ symbol?: string; mode?: Mode }>();
   const colorScheme = useColorScheme() ?? 'light';
@@ -20,27 +22,19 @@ export default function NotificationSetup() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-    useEffect(() => {
-      getToken(getMessaging(getApp()))
-        .then(token => setUserId(token))
-        .catch(() => setUserId(null));
-    }, []);
-    
   useEffect(() => {
-    if (!symbol) return;
-    const interval = setInterval(() => 
-      HttpService.get<CryptoPrice>(`crypto/symbol/${symbol}`)
-        .then(crypto => setCrypto(crypto))
-    , 1000);
-
-    return () => clearInterval(interval);
-  }, [symbol]);
+    getToken(getMessaging(getApp()))
+      .then(token => setUserId(token))
+      .catch(() => setUserId(null));
+  }, []);
 
   useEffect(() => {
+    const crypto = cryptos.filter(crypto => crypto.symbol === symbol).at(0);
+    setCrypto(crypto || null);
     if (mode === 'percent' && crypto?.price !== null) {
       setTargetPrice(crypto?.price || null);
     }
-  }, [mode, crypto?.price]);
+  }, [mode, cryptos]);
 
   const handleSubmit = async () => {
     if (!userId) {
@@ -77,8 +71,8 @@ export default function NotificationSetup() {
     try {
       await HttpService.post<void>(`notification/`, body);
       Alert.alert('Success', 'Notification set!');
-      router.replace({ pathname: '/tracked/[symbol]', params: { symbol } });
-    } catch(e) {
+      router.replace({ pathname: '/screens/symbol', params: { symbol } });
+    } catch (e) {
       console.error('Network error:', e);
       Alert.alert('Error', 'Failed to set notification.');
     }
@@ -133,11 +127,11 @@ export default function NotificationSetup() {
         <Text style={themedStyles.title}>
           {mode === 'percent' ? 'Percentage Change Notification' : 'Above/Below Notification'}
         </Text>
-        
+
         <Text style={themedStyles.symbolPriceLine}>
-          {typeof symbol === 'string' ? 
+          {typeof symbol === 'string' ?
             `${symbol.replace('USDT', '/USD')} ${crypto?.price}`
-          : ''}
+            : ''}
         </Text>
 
         <View style={{ height: 18 }} />

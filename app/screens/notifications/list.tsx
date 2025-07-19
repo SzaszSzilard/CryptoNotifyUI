@@ -20,7 +20,7 @@ export default function NotificationTypes() {
       <View style={themedStyles.container}>
         <View style={themedStyles.titleContainer}>
           <Text style={themedStyles.title}>
-            Select Notification Type
+            Create a new notification
           </Text>
           <Text style={themedStyles.subtitle}>
             for {typeof symbol === 'string' ? symbol.replace('USDT', '/USD') : ''}

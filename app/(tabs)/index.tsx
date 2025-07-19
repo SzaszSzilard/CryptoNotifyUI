@@ -9,7 +9,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View, useColorScheme } from 'react-native';
 
 import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
 import { CryptoCard } from '@/components/ui/CNF/CryptoCard';
 import { useRouter } from 'expo-router';
 
@@ -82,13 +81,7 @@ export default function HomeScreen() {
       data={cryptos.filter(crypto => notifCount[crypto.symbol] > 0)}
       keyExtractor={crypto => crypto.symbol}
       ListHeaderComponent={
-        <>
-          <ThemedView style={themedStyles.titleContainer}>
-          </ThemedView>
-          <ThemedView style={themedStyles.container}>
-            <ThemedText style={themedStyles.header}>Your Tracked Cryptos</ThemedText>
-          </ThemedView>
-        </>
+        <ThemedText style={themedStyles.header}>Your Tracked Cryptos</ThemedText>
       }
       renderItem={({ item: crypto }) => (
         <CryptoCard crypto={crypto} notifCount={notifCount} />
@@ -100,53 +93,54 @@ export default function HomeScreen() {
 
 const styles = (colorScheme: string) =>
   StyleSheet.create({
-    titleContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-      marginTop: 24,
-      marginBottom: 8,
-    },
-    container: {
-      backgroundColor: colorScheme === 'dark' ? '#181a20' : '#f5f6fa',
-      padding: 0,
-    },
+    // titleContainer: {
+    //   flexDirection: 'row',
+    //   alignItems: 'center',
+    //   gap: 8,
+    //   marginTop: 24,
+    //   marginBottom: 8,
+    // },
+    // container: {
+    //   backgroundColor: colorScheme === 'dark' ? '#181a20' : '#f5f6fa',
+    //   padding: 0,
+    // },
     header: {
+      marginTop: 16,
       fontSize: 22,
       fontWeight: 'bold',
       color: colorScheme === 'dark' ? '#fff' : '#181a20',
-      marginBottom: 18,
+      marginBottom: 16,
       textAlign: 'center',
     },
-    centered: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: colorScheme === 'dark' ? '#181a20' : '#f5f6fa',
-      padding: 24,
-    },
-    emptyTitle: {
-      fontSize: 20,
-      fontWeight: 'bold',
-      color: colorScheme === 'dark' ? '#fff' : '#181a20',
-      marginBottom: 8,
-      textAlign: 'center',
-    },
-    emptySubtitle: {
-      fontSize: 16,
-      color: colorScheme === 'dark' ? '#b2bec3' : '#636e72',
-      textAlign: 'center',
-    },
-    cryptoCard: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: colorScheme === 'dark' ? '#23272f' : '#fafdff',
-      borderRadius: 12,
-      padding: 18,
-      marginBottom: 14,
-      elevation: colorScheme === 'dark' ? 0 : 2,
-      shadowColor: colorScheme === 'dark' ? 'transparent' : '#b2bec3',
-      shadowOpacity: colorScheme === 'dark' ? 0 : 0.08,
-      shadowRadius: 4,
-    },
+    // centered: {
+    //   flex: 1,
+    //   justifyContent: 'center',
+    //   alignItems: 'center',
+    //   backgroundColor: colorScheme === 'dark' ? '#181a20' : '#f5f6fa',
+    //   padding: 24,
+    // },
+    // emptyTitle: {
+    //   fontSize: 20,
+    //   fontWeight: 'bold',
+    //   color: colorScheme === 'dark' ? '#fff' : '#181a20',
+    //   marginBottom: 8,
+    //   textAlign: 'center',
+    // },
+    // emptySubtitle: {
+    //   fontSize: 16,
+    //   color: colorScheme === 'dark' ? '#b2bec3' : '#636e72',
+    //   textAlign: 'center',
+    // },
+    // cryptoCard: {
+    //   flexDirection: 'row',
+    //   alignItems: 'center',
+    //   backgroundColor: colorScheme === 'dark' ? '#23272f' : '#fafdff',
+    //   borderRadius: 12,
+    //   padding: 18,
+    //   marginBottom: 14,
+    //   elevation: colorScheme === 'dark' ? 0 : 2,
+    //   shadowColor: colorScheme === 'dark' ? 'transparent' : '#b2bec3',
+    //   shadowOpacity: colorScheme === 'dark' ? 0 : 0.08,
+    //   shadowRadius: 4,
+    // },
   });

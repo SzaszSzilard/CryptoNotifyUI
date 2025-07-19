@@ -1,3 +1,6 @@
+import { CryptoPrice } from '@/models/CryptoPrice';
+import { FontAwesome } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import {
   StyleSheet,
@@ -7,15 +10,12 @@ import {
   useColorScheme,
 } from 'react-native';
 import Animated, {
+  useAnimatedStyle,
   useSharedValue,
   withRepeat,
   withSequence,
   withTiming,
-  useAnimatedStyle,
 } from 'react-native-reanimated';
-import { FontAwesome } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { CryptoPrice } from '@/models/CryptoPrice';
 
 type CryptoCardProps = {
   crypto: CryptoPrice;
@@ -49,7 +49,7 @@ export function CryptoCard({ crypto, notifCount }: CryptoCardProps) {
       activeOpacity={0.85}
       onPress={() =>
         router.push({
-          pathname: '/tracked/[symbol]',
+          pathname: '/screens/notifications/list',
           params: { symbol: crypto.symbol },
         })
       }
@@ -62,7 +62,13 @@ export function CryptoCard({ crypto, notifCount }: CryptoCardProps) {
           ${crypto.price > 1 ? crypto.price.toFixed(2) : crypto.price.toFixed(8)}
         </Text>
       </View>
-      <View style={{ position: 'relative', justifyContent: 'center', alignItems: 'center' }}>
+      <TouchableOpacity style={{ position: 'relative', justifyContent: 'center', alignItems: 'center' }}
+      onPress={() =>
+        router.push({
+          pathname: '/screens/symbol',
+          params: { symbol: crypto.symbol },
+        })
+      }>
         <Animated.View style={animatedStyle}>
           <FontAwesome name="bell" size={24} color="#87ceeb" />
         </Animated.View>
@@ -71,7 +77,7 @@ export function CryptoCard({ crypto, notifCount }: CryptoCardProps) {
             <Text style={themedStyles.bubbleText}>{notifCount[crypto.symbol]}</Text>
           </View>
         )}
-      </View>
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 }
