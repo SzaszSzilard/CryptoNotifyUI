@@ -1,28 +1,21 @@
+import { useCryptoData } from '@/components/ui/CNF/RealTimeCrypto';
 import { Notification } from '@/models/Notification';
 import { HttpService } from '@/services/httpService';
 import { FontAwesome } from '@expo/vector-icons';
-import { getApp } from '@react-native-firebase/app';
-import { getMessaging, getToken } from '@react-native-firebase/messaging';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity, View, useColorScheme } from 'react-native';
 
 
 export default function TrackedNotifications() {
-  const [userId, setUserId] = useState<string | null>(null);
-  
+  const { _, userId } = useCryptoData();
+
   const { symbol } = useLocalSearchParams<{ symbol: string }>();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const colorScheme = useColorScheme() ?? 'light';
   const themedStyles = styles(colorScheme);
-
-  useEffect(() => {
-    getToken(getMessaging(getApp()))
-      .then(token => setUserId(token))
-      .catch(() => setUserId(null));
-  }, []);
 
   useFocusEffect(
     React.useCallback(() => {

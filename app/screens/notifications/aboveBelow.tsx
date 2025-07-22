@@ -1,8 +1,6 @@
 import { useCryptoData } from '@/components/ui/CNF/RealTimeCrypto';
 import { CryptoPrice } from '@/models/CryptoPrice';
 import { HttpService } from '@/services/httpService';
-import { getApp } from '@react-native-firebase/app';
-import { getMessaging, getToken } from '@react-native-firebase/messaging';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, useColorScheme, View } from 'react-native';
@@ -10,8 +8,7 @@ import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, useColorScheme, V
 type Mode = 'aboveBelow' | 'percent';
 
 export default function NotificationSetup() {
-  const [userId, setUserId] = useState<string | null>(null);
-  const cryptos = useCryptoData();
+  const { cryptos, userId } = useCryptoData();
   
   const { symbol, mode = 'aboveBelow' } = useLocalSearchParams<{ symbol?: string; mode?: Mode }>();
   const colorScheme = useColorScheme() ?? 'light';
@@ -21,12 +18,6 @@ export default function NotificationSetup() {
   const [isAbove, setIsAbove] = useState(true);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-
-  useEffect(() => {
-    getToken(getMessaging(getApp()))
-      .then(token => setUserId(token))
-      .catch(() => setUserId(null));
-  }, []);
 
   useEffect(() => {
     const crypto = cryptos.filter(crypto => crypto.symbol === symbol).at(0);
@@ -81,7 +72,6 @@ export default function NotificationSetup() {
 
   const themedStyles = styles(colorScheme);
 
-  // Elegant above/below selector
   function AboveBelowSelector() {
     const isPercent = mode === 'percent';
     return (
@@ -143,7 +133,7 @@ export default function NotificationSetup() {
               keyboardType="numeric"
               value={targetPrice}
               onChangeText={setTargetPrice}
-              placeholder="66.66% "
+              placeholder="6.66% "
               placeholderTextColor={colorScheme === 'dark' ? '#b2bec3' : '#636e72'}
               textAlign="left"
             />
@@ -157,7 +147,7 @@ export default function NotificationSetup() {
               keyboardType="numeric"
               value={percentage}
               onChangeText={setPercentage}
-              placeholder="66.66"
+              placeholder="6.66"
               placeholderTextColor={colorScheme === 'dark' ? '#b2bec3' : '#636e72'}
               textAlign="left"
             />

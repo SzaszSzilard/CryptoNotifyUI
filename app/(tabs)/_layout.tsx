@@ -1,4 +1,3 @@
-import { CryptoDataProvider } from '@/components/ui/CNF/RealTimeCrypto';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
