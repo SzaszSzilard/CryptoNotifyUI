@@ -1,13 +1,25 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
-import { HttpService } from '@/services/httpService';
 import { CryptoPrice } from '@/models/CryptoPrice';
+import { HttpService } from '@/services/httpService';
+import { getApp } from '@react-native-firebase/app';
+import { getMessaging, getToken } from '@react-native-firebase/messaging';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import CryptoDataContextInterface from './CryptoContextInterface';
 
-const CryptoDataContext = createContext<CryptoPrice[] | undefined>(undefined);
+interface CryptoDataContextValue {
+  cryptos: CryptoPrice[];
+  userId: string;
+}
+
+const CryptoDataContext = createContext<CryptoDataContextInterface | undefined>(undefined);
 
 export const CryptoDataProvider = ({ children }: { children: React.ReactNode }) => {
   const [cryptos, setCryptos] = useState<CryptoPrice[]>([]);
+  const [userId, setUserId] = useState<string>('');
 
   useEffect(() => {
+    getToken(getMessaging(getApp()))
+      .then(token => setUserId(token))
+
     const fetchCryptos = async () => {
       try {
         const data = await HttpService.get<CryptoPrice[]>('crypto/list');
@@ -24,7 +36,7 @@ export const CryptoDataProvider = ({ children }: { children: React.ReactNode }) 
   }, []);
 
   return (
-    <CryptoDataContext.Provider value={cryptos}>
+    <CryptoDataContext.Provider value={{ cryptos, userId }}>
       {children}
     </CryptoDataContext.Provider>
   );

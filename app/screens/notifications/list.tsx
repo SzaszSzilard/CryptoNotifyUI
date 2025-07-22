@@ -7,7 +7,7 @@ export default function NotificationTypes() {
   const colorScheme = useColorScheme() ?? 'light';
 
   const notificationTypes = [
-    'Above/Below',
+    'Price Target',
     'Percentage Change',
     'Short term rally',
     'Change of direction',
@@ -20,7 +20,7 @@ export default function NotificationTypes() {
       <View style={themedStyles.container}>
         <View style={themedStyles.titleContainer}>
           <Text style={themedStyles.title}>
-            Create a new notification
+            Select notification type
           </Text>
           <Text style={themedStyles.subtitle}>
             for {typeof symbol === 'string' ? symbol.replace('USDT', '/USD') : ''}
@@ -32,7 +32,7 @@ export default function NotificationTypes() {
             onPress={() => router.push({ pathname: '/screens/notifications/aboveBelow', params: { symbol } })}
             activeOpacity={0.85}
           >
-            <Text style={themedStyles.cardText}>Above/Below</Text>
+            <Text style={themedStyles.cardText}>Price Target</Text>
           </TouchableOpacity>
           {notificationTypes.slice(1).map(type => (
             <TouchableOpacity

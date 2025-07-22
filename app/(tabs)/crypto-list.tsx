@@ -1,17 +1,27 @@
 import { CryptoCard } from '@/components/ui/CNF/CryptoCard';
 import { useCryptoData } from '@/components/ui/CNF/RealTimeCrypto';
-import React, { useMemo, useState } from 'react';
+import { HttpService } from '@/services/httpService';
+import { useFocusEffect } from '@react-navigation/native';
+import React, { useCallback, useMemo, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, StyleSheet, Text, TextInput, useColorScheme } from 'react-native';
 
-
 export default function CryptoListScreen() {
-  const cryptos = useCryptoData();
+  const { cryptos, userId } = useCryptoData();
 
   const [search, setSearch] = useState('');
   const colorScheme = useColorScheme() ?? 'light';
-  const notifCount: Record<string, number> = {};
-
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const themedStyles = styles(colorScheme);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!userId) return;
+      
+      HttpService.get<Notification[]>(`user/${userId}/notifications`)
+        .then(setNotifications)
+        .catch((e) => console.error('Failed to load notifications', e))
+    }, [userId])
+  );
 
   const filteredCryptos = useMemo(() => {
     if (!search.trim()) return cryptos;
@@ -22,8 +32,12 @@ export default function CryptoListScreen() {
     );
   }, [cryptos, search]);
 
-  return (
+  const notifCount: Record<string, number> = {};
+  notifications.forEach(n => {
+    notifCount[n.symbol] = (notifCount[n.symbol] || 0) + 1;
+  });
 
+  return (
     <KeyboardAvoidingView style={themedStyles.container}>
       <TextInput
         style={themedStyles.searchInput}
