@@ -29,7 +29,7 @@ export default function NotificationTypes() {
         <View style={{ marginTop: 16 }}>
           <TouchableOpacity
             style={themedStyles.card}
-            onPress={() => router.push({ pathname: '/screens/notifications/aboveBelow', params: { symbol } })}
+            onPress={() => router.push({ pathname: '/screens/notifications/target', params: { symbol } })}
             activeOpacity={0.85}
           >
             <Text style={themedStyles.cardText}>Price Target</Text>
@@ -38,7 +38,7 @@ export default function NotificationTypes() {
             <TouchableOpacity
               key={type}
               style={themedStyles.card}
-              onPress={() => router.push({ pathname: '/screens/notifications/aboveBelow', params: { symbol, mode: 'percent' } })}
+              onPress={() => router.push({ pathname: '/screens/notifications/target', params: { symbol, mode: 'percent' } })}
               activeOpacity={0.85}
             >
               <Text style={themedStyles.cardText}>{type}</Text>

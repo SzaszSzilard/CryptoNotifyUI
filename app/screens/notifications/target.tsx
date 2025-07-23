@@ -5,16 +5,16 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, useColorScheme, View } from 'react-native';
 
-type Mode = 'aboveBelow' | 'percent';
+type Mode = 'target' | 'percent';
 
 export default function NotificationSetup() {
   const { cryptos, userId } = useCryptoData();
-  
-  const { symbol, mode = 'aboveBelow' } = useLocalSearchParams<{ symbol?: string; mode?: Mode }>();
+
+  const { symbol, mode = 'target' } = useLocalSearchParams<{ symbol?: string; mode?: Mode }>();
   const colorScheme = useColorScheme() ?? 'light';
   const [crypto, setCrypto] = useState<CryptoPrice | null>(null);
   const [targetPrice, setTargetPrice] = useState<number | null>(null);
-  const [percentage, setPercentage] = useState('');
+  const [percentage, setPercentage] = useState<number | null>(null);
   const [isAbove, setIsAbove] = useState(true);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -43,7 +43,7 @@ export default function NotificationSetup() {
     setLoading(true);
 
     let type = '';
-    if (mode === 'aboveBelow') {
+    if (mode === 'target') {
       type = isAbove ? 'n-above' : 'n-below';
     } else if (mode === 'percent') {
       type = isAbove ? 'n-percent-above' : 'n-percent-below';
@@ -72,8 +72,7 @@ export default function NotificationSetup() {
 
   const themedStyles = styles(colorScheme);
 
-  function AboveBelowSelector() {
-    const isPercent = mode === 'percent';
+  function TargetSelector() {
     return (
       <View style={themedStyles.selectorRow}>
         <TouchableOpacity
@@ -88,7 +87,7 @@ export default function NotificationSetup() {
             themedStyles.selectorText,
             isAbove ? themedStyles.selectorTextActive : themedStyles.selectorTextInactive,
           ]}>
-            {isPercent ? 'Rises' : 'Above'}
+            {mode === 'percent' ? 'Rises' : 'Above'}
           </Text>
         </TouchableOpacity>
         <View style={themedStyles.selectorDivider} />
@@ -104,12 +103,34 @@ export default function NotificationSetup() {
             themedStyles.selectorText,
             !isAbove ? themedStyles.selectorTextActive : themedStyles.selectorTextInactive,
           ]}>
-            {isPercent ? 'Falls' : 'Below'}
+            {mode === 'percent' ? 'Falls' : 'Below'}
           </Text>
         </TouchableOpacity>
       </View>
     );
   }
+
+  const TargetInput = ({label,value,setValue}: {
+    label: string;
+    value: number;
+    setValue: (v: number) => void;
+  }) => {
+    return (
+      <>
+        <Text style={themedStyles.label}>{label}</Text>
+        <TextInput
+          style={themedStyles.input}
+          keyboardType="numeric"
+          value={value.toString()}
+          onChangeText={(text) => setValue(Number(text))}
+          placeholder="6.66"
+          placeholderTextColor={colorScheme === 'dark' ? '#b2bec3' : '#636e72'}
+          textAlign="left"
+        />
+      </>
+    );
+  };
+
 
   return (
     <View style={themedStyles.safeArea}>
@@ -125,35 +146,13 @@ export default function NotificationSetup() {
         </Text>
 
         <View style={{ height: 18 }} />
-        {mode === 'aboveBelow' && (
-          <>
-            <Text style={themedStyles.label}>Target Price</Text>
-            <TextInput
-              style={themedStyles.input}
-              keyboardType="numeric"
-              value={targetPrice}
-              onChangeText={setTargetPrice}
-              placeholder="6.66% "
-              placeholderTextColor={colorScheme === 'dark' ? '#b2bec3' : '#636e72'}
-              textAlign="left"
-            />
-          </>
+        {mode === 'target' && (
+          <TargetInput label="Target Price ($)" value={targetPrice || 0} setValue={setTargetPrice} />
         )}
         {mode === 'percent' && (
-          <>
-            <Text style={themedStyles.label}>Percentage (%)</Text>
-            <TextInput
-              style={themedStyles.input}
-              keyboardType="numeric"
-              value={percentage}
-              onChangeText={setPercentage}
-              placeholder="6.66"
-              placeholderTextColor={colorScheme === 'dark' ? '#b2bec3' : '#636e72'}
-              textAlign="left"
-            />
-          </>
+          <TargetInput label="Percentage (%)" value={percentage || 0} setValue={setPercentage} />
         )}
-        <AboveBelowSelector />
+        <TargetSelector />
         <TouchableOpacity
           style={themedStyles.button}
           onPress={handleSubmit}
