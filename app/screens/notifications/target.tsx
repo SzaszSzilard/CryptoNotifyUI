@@ -110,28 +110,6 @@ export default function NotificationSetup() {
     );
   }
 
-  const TargetInput = ({label,value,setValue}: {
-    label: string;
-    value: number;
-    setValue: (v: number) => void;
-  }) => {
-    return (
-      <>
-        <Text style={themedStyles.label}>{label}</Text>
-        <TextInput
-          style={themedStyles.input}
-          keyboardType="numeric"
-          value={value.toString()}
-          onChangeText={(text) => setValue(Number(text))}
-          placeholder="6.66"
-          placeholderTextColor={colorScheme === 'dark' ? '#b2bec3' : '#636e72'}
-          textAlign="left"
-        />
-      </>
-    );
-  };
-
-
   return (
     <View style={themedStyles.safeArea}>
       <View style={themedStyles.container}>
@@ -146,11 +124,23 @@ export default function NotificationSetup() {
         </Text>
 
         <View style={{ height: 18 }} />
-        {mode === 'target' && (
-          <TargetInput label="Target Price ($)" value={targetPrice || 0} setValue={setTargetPrice} />
-        )}
-        {mode === 'percent' && (
-          <TargetInput label="Percentage (%)" value={percentage || 0} setValue={setPercentage} />
+        <Text style={themedStyles.label}>{mode === 'target' ? "Target Price" : "Percentage (%)"}</Text>
+        {['target', 'percent'].includes(mode) && (
+          <TextInput
+            style={themedStyles.input}
+            keyboardType="numeric"
+            value={(mode === 'target' ? targetPrice : percentage)?.toString() ?? ''}
+            onChangeText={(text) => {
+              const num = Number(text);
+              if (!isNaN(num)) {
+                mode === 'target' ? setTargetPrice(num) : setPercentage(num);
+              } else if (text.trim() === '') {
+                mode === 'target' ? setTargetPrice(null) : setPercentage(null);
+              }
+            }}
+            placeholder="6.66"
+            placeholderTextColor={colorScheme === 'dark' ? '#b2bec3' : '#636e72'}
+            textAlign="left" />
         )}
         <TargetSelector />
         <TouchableOpacity
