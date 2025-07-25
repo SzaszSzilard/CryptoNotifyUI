@@ -3,7 +3,8 @@ import { CryptoPrice } from '@/models/CryptoPrice';
 import { HttpService } from '@/services/httpService';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, useColorScheme, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native';
+
 
 type Mode = 'target' | 'percent';
 
@@ -75,13 +76,12 @@ export default function NotificationSetup() {
   function TargetSelector() {
     return (
       <View style={themedStyles.selectorRow}>
-        <TouchableOpacity
+        <Pressable
           style={[
             themedStyles.selectorButton,
             isAbove ? themedStyles.selectorActiveAbove : themedStyles.selectorInactive,
           ]}
           onPress={() => setIsAbove(true)}
-          activeOpacity={0.85}
         >
           <Text style={[
             themedStyles.selectorText,
@@ -89,15 +89,14 @@ export default function NotificationSetup() {
           ]}>
             {mode === 'percent' ? 'Rises' : 'Above'}
           </Text>
-        </TouchableOpacity>
+        </Pressable>
         <View style={themedStyles.selectorDivider} />
-        <TouchableOpacity
+        <Pressable
           style={[
             themedStyles.selectorButton,
             !isAbove ? themedStyles.selectorActiveBelow : themedStyles.selectorInactive,
           ]}
           onPress={() => setIsAbove(false)}
-          activeOpacity={0.85}
         >
           <Text style={[
             themedStyles.selectorText,
@@ -105,108 +104,98 @@ export default function NotificationSetup() {
           ]}>
             {mode === 'percent' ? 'Falls' : 'Below'}
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     );
   }
 
   return (
-    <View style={themedStyles.safeArea}>
-      <View style={themedStyles.container}>
-        <Text style={themedStyles.title}>
-          {mode === 'percent' ? 'Percentage Change Notification' : 'Price Target Notification'}
-        </Text>
+    <View style={themedStyles.main}>
+      <Text style={themedStyles.title}>
+        {mode === 'percent' ? 'Percentage Change Notification' : 'Price Target Notification'}
+      </Text>
 
-        <Text style={themedStyles.symbolPriceLine}>
-          {typeof symbol === 'string' ?
-            `${symbol.replace('USDT', '/USD')} ${crypto?.price}`
-            : ''}
-        </Text>
+      <Text style={[themedStyles.title, themedStyles.symbolPrice]}>
+        {typeof symbol === 'string' ?
+          `${symbol.replace('USDT', '/USD')}: $${crypto?.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+          : ''}
+      </Text>
 
-        <View style={{ height: 18 }} />
-        <Text style={themedStyles.label}>{mode === 'target' ? "Target Price" : "Percentage (%)"}</Text>
-        {['target', 'percent'].includes(mode) && (
-          <TextInput
-            style={themedStyles.input}
-            keyboardType="numeric"
-            value={(mode === 'target' ? targetPrice : percentage)?.toString() ?? ''}
-            onChangeText={(text) => {
-              const num = Number(text);
-              if (!isNaN(num)) {
-                mode === 'target' ? setTargetPrice(num) : setPercentage(num);
-              } else if (text.trim() === '') {
-                mode === 'target' ? setTargetPrice(null) : setPercentage(null);
-              }
-            }}
-            placeholder="6.66"
-            placeholderTextColor={colorScheme === 'dark' ? '#b2bec3' : '#636e72'}
-            textAlign="left" />
-        )}
-        <TargetSelector />
-        <TouchableOpacity
-          style={themedStyles.button}
-          onPress={handleSubmit}
-          disabled={loading}
-        >
-          <Text style={themedStyles.buttonText}>{loading ? 'Submitting...' : 'Submit'}</Text>
-        </TouchableOpacity>
-      </View>
+      {mode !== 'percent' && (
+        <Text style={themedStyles.info}>Info: Setting a Price Target notification, will result in a push notification when the price goes above or falls below your specified target.</Text>
+      )}
+      { mode === 'percent' && (
+        <Text style={themedStyles.info}>Info: Setting a Percentage Change notification, will result in a push notification when the price rises or falls by your specified percentage.</Text>
+      )}
+
+      <Text style={themedStyles.label}>{mode === 'target' ? "Target Price" : "Target Percentage (%)"}</Text>
+      {['target', 'percent'].includes(mode) && (
+        <TextInput
+          style={themedStyles.input}
+          keyboardType="numeric"
+          value={(mode === 'target' ? targetPrice : percentage)?.toString() ?? ''}
+          onChangeText={(text) => {
+            const num = Number(text);
+            if (!isNaN(num)) {
+              mode === 'target' ? setTargetPrice(num) : setPercentage(num);
+            } else if (text.trim() === '') {
+              mode === 'target' ? setTargetPrice(null) : setPercentage(null);
+            }
+          }}
+          placeholder="6.66"
+          placeholderTextColor={colorScheme === 'dark' ? '#b2bec3' : '#636e72'}
+          textAlign="left" />
+      )}
+      <TargetSelector />
+      <Pressable
+        style={themedStyles.button}
+        onPress={handleSubmit}
+        disabled={loading}
+      >
+        <Text style={themedStyles.buttonText}>{loading ? 'Submitting...' : 'Submit'}</Text>
+      </Pressable>
     </View>
   );
 }
 
 const styles = (colorScheme: string | null) =>
   StyleSheet.create({
-    safeArea: {
+    main: {
       flex: 1,
       backgroundColor: colorScheme === 'dark' ? '#181a20' : '#f5f6fa',
-    },
-    container: {
-      flex: 1,
       padding: 24,
-      justifyContent: 'flex-start',
     },
     title: {
-      fontSize: 26,
+      fontSize: 25,
       fontWeight: 'bold',
       color: colorScheme === 'dark' ? '#fff' : '#222',
-      marginBottom: 4,
-      textAlign: 'left',
     },
-    subtitle: {
-      fontSize: 18,
-      color: colorScheme === 'dark' ? '#b2bec3' : '#636e72',
-      marginBottom: 6,
-      textAlign: 'left',
-    },
-    currentPriceLabel: {
-      fontSize: 18,
-      fontWeight: 'bold',
-      color: colorScheme === 'dark' ? '#b2bec3' : '#2980ff',
-      marginBottom: 12,
-      textAlign: 'left',
-    },
-    currentPriceValue: {
-      fontSize: 22,
-      fontWeight: 'bold',
+    symbolPrice: {
       color: colorScheme === 'dark' ? '#f1c40f' : '#222',
+      fontSize: 20,
+    },
+    info: {
+      fontSize: 16,
+      color: colorScheme === 'dark' ? '#b2bec3' : '#636e72',
+      marginTop: 20,
+      fontStyle: 'italic',
     },
     label: {
-      fontSize: 17,
+      marginTop: 35,
+      marginBottom: 10,
+      fontSize: 16,
       color: colorScheme === 'dark' ? '#b2bec3' : '#636e72',
-      marginBottom: 6,
-      textAlign: 'left',
     },
     input: {
-      height: 48,
+      height: 60,
       borderWidth: 1,
       borderColor: '#ccc',
       borderRadius: 10,
       paddingHorizontal: 16,
-      fontSize: 19,
+      fontSize: 20,
       color: colorScheme === 'dark' ? '#fff' : '#222',
       backgroundColor: colorScheme === 'dark' ? '#23272f' : '#fff',
-      marginBottom: 14,
+      marginBottom: 20,
       textAlign: 'left',
     },
     selectorRow: {
@@ -219,7 +208,7 @@ const styles = (colorScheme: string | null) =>
       backgroundColor: colorScheme === 'dark' ? '#23272f' : '#eaf0fb',
       borderWidth: 1,
       borderColor: colorScheme === 'dark' ? '#353b48' : '#b2bec3',
-      height: 56,
+      height: 60,
     },
     selectorButton: {
       flex: 1,
@@ -261,20 +250,14 @@ const styles = (colorScheme: string | null) =>
     button: {
       backgroundColor: colorScheme === 'dark' ? '#f1c40f' : '#f39c12',
       borderRadius: 10,
-      padding: 18,
       alignItems: 'center',
-      marginTop: 10,
+      justifyContent: 'center',
+      marginTop: 35,
+      height: 60,
     },
     buttonText: {
       color: colorScheme === 'dark' ? '#222' : '#fff',
       fontSize: 21,
       fontWeight: 'bold',
-    },
-    symbolPriceLine: {
-      fontSize: 22,
-      fontWeight: 'bold',
-      color: colorScheme === 'dark' ? '#f1c40f' : '#222',
-      textAlign: 'left',
-      marginBottom: 0,
     },
   });
