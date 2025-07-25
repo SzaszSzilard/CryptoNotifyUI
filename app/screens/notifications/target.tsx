@@ -1,10 +1,10 @@
+import { InformationBox } from '@/components/ui/CNF/InformationBox';
 import { useCryptoData } from '@/components/ui/CNF/RealTimeCrypto';
 import { CryptoPrice } from '@/models/CryptoPrice';
 import { HttpService } from '@/services/httpService';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native';
-
 
 type Mode = 'target' | 'percent';
 
@@ -121,12 +121,7 @@ export default function NotificationSetup() {
           : ''}
       </Text>
 
-      {mode !== 'percent' && (
-        <Text style={themedStyles.info}>Info: Setting a Price Target notification, will result in a push notification when the price goes above or falls below your specified target.</Text>
-      )}
-      { mode === 'percent' && (
-        <Text style={themedStyles.info}>Info: Setting a Percentage Change notification, will result in a push notification when the price rises or falls by your specified percentage.</Text>
-      )}
+      <InformationBox mode={mode as Mode} />
 
       <Text style={themedStyles.label}>{mode === 'target' ? "Target Price" : "Target Percentage (%)"}</Text>
       {['target', 'percent'].includes(mode) && (
@@ -173,12 +168,6 @@ const styles = (colorScheme: string | null) =>
     symbolPrice: {
       color: colorScheme === 'dark' ? '#f1c40f' : '#222',
       fontSize: 20,
-    },
-    info: {
-      fontSize: 16,
-      color: colorScheme === 'dark' ? '#b2bec3' : '#636e72',
-      marginTop: 20,
-      fontStyle: 'italic',
     },
     label: {
       marginTop: 35,
