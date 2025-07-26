@@ -5,7 +5,7 @@ import { Mode } from '@/models/Mode';
 import { HttpService } from '@/services/httpService';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, useColorScheme, View } from 'react-native';
 
 export default function NotificationSetup() {
   const { cryptos, userId } = useCryptoData();
@@ -16,8 +16,6 @@ export default function NotificationSetup() {
   const { symbol, mode = 'target' } = useLocalSearchParams<{ symbol?: string; mode?: Mode }>();
   const [crypto, setCrypto] = useState<CryptoPrice | null>(null);
   const [targetPrice, setTargetPrice] = useState<number | null>(null);
-  const [percentage, setPercentage] = useState<number | null>(null);
-  const [isAbove, setIsAbove] = useState(true);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -34,32 +32,15 @@ export default function NotificationSetup() {
       Alert.alert('User ID error', 'Could not retrieve user ID.');
       return;
     }
-    if (!targetPrice || isNaN(Number(targetPrice))) {
-      Alert.alert('Invalid input', 'Please enter a valid price.');
-      return;
-    }
-    if (mode === 'percent' && (!percentage || isNaN(Number(percentage)))) {
-      Alert.alert('Invalid input', 'Please enter a valid percentage.');
-      return;
-    }
+
     setLoading(true);
 
-    let type = '';
-    if (mode === 'target') {
-      type = isAbove ? 'n-above' : 'n-below';
-    } else if (mode === 'percent') {
-      type = isAbove ? 'n-percent-above' : 'n-percent-below';
-    }
-
     const body: any = {
-      type,
+      type: 'n-' + mode,
       userId: userId,
       symbol,
-      price: targetPrice,
+      time: 60,
     };
-    if (mode === 'percent') {
-      body.percentage = percentage;
-    }
 
     try {
       await HttpService.post<void>(`notification/`, body);
@@ -69,49 +50,15 @@ export default function NotificationSetup() {
       console.error('Network error:', e);
       Alert.alert('Error', 'Failed to set notification.');
     }
+
     setLoading(false);
   };
 
-  function TargetSelector() {
-    return (
-      <View style={themedStyles.selectorRow}>
-        <Pressable
-          style={[
-            themedStyles.selectorButton,
-            isAbove ? themedStyles.selectorActiveAbove : themedStyles.selectorInactive,
-          ]}
-          onPress={() => setIsAbove(true)}
-        >
-          <Text style={[
-            themedStyles.selectorText,
-            isAbove ? themedStyles.selectorTextActive : themedStyles.selectorTextInactive,
-          ]}>
-            {mode === 'percent' ? 'Rises' : 'Above'}
-          </Text>
-        </Pressable>
-        <View style={themedStyles.selectorDivider} />
-        <Pressable
-          style={[
-            themedStyles.selectorButton,
-            !isAbove ? themedStyles.selectorActiveBelow : themedStyles.selectorInactive,
-          ]}
-          onPress={() => setIsAbove(false)}
-        >
-          <Text style={[
-            themedStyles.selectorText,
-            !isAbove ? themedStyles.selectorTextActive : themedStyles.selectorTextInactive,
-          ]}>
-            {mode === 'percent' ? 'Falls' : 'Below'}
-          </Text>
-        </Pressable>
-      </View>
-    );
-  }
 
   return (
     <View style={themedStyles.main}>
       <Text style={themedStyles.title}>
-        {mode === 'percent' ? 'Percentage Change Notification' : 'Price Target Notification'}
+        {mode === 'rally' ? 'Short term rally Notification' : 'Change of direction Notification'}
       </Text>
 
       <Text style={[themedStyles.title, themedStyles.symbolPrice]}>
@@ -122,25 +69,6 @@ export default function NotificationSetup() {
 
       <InformationBox mode={mode as Mode} />
 
-      <Text style={themedStyles.label}>{mode === 'target' ? "Target Price" : "Target Percentage (%)"}</Text>
-      {['target', 'percent'].includes(mode) && (
-        <TextInput
-          style={themedStyles.input}
-          keyboardType="numeric"
-          value={(mode === 'target' ? targetPrice : percentage)?.toString() ?? ''}
-          onChangeText={(text) => {
-            const num = Number(text);
-            if (!isNaN(num)) {
-              mode === 'target' ? setTargetPrice(num) : setPercentage(num);
-            } else if (text.trim() === '') {
-              mode === 'target' ? setTargetPrice(null) : setPercentage(null);
-            }
-          }}
-          placeholder="6.66"
-          placeholderTextColor={colorScheme === 'dark' ? '#b2bec3' : '#636e72'}
-        />
-      )}
-      <TargetSelector />
       <Pressable
         style={themedStyles.button}
         onPress={handleSubmit}

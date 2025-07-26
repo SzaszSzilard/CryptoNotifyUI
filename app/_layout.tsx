@@ -3,10 +3,9 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useColorScheme as useDeviceColorScheme } from '@/hooks/useColorScheme';
 
 function CryptoNotifyHeader({ colorScheme }: { colorScheme: string }) {
   return (
@@ -40,15 +39,13 @@ function CryptoNotifyHeader({ colorScheme }: { colorScheme: string }) {
 }
 
 export default function RootLayout() {
-  const deviceColorScheme = useDeviceColorScheme();
+  const theme = useColorScheme() ?? 'light';
 
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
   if (!loaded) return null;
-
-  const theme = deviceColorScheme === 'dark' ? 'dark' : 'light';
 
   const themedStyles = StyleSheet.create({
     safeArea: {

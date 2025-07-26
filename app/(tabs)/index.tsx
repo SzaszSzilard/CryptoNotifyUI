@@ -12,9 +12,9 @@ import { useRouter } from 'expo-router';
 
 export default function HomeScreen() {
   const { cryptos, userId } = useCryptoData();
+  const colorScheme = useColorScheme() ?? 'light';
 
   const router = useRouter();
-  const colorScheme = useColorScheme() ?? 'light';
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 

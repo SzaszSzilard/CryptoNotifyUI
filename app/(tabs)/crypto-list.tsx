@@ -6,13 +6,13 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, StyleSheet, Text, TextInput, useColorScheme } from 'react-native';
 
 export default function CryptoListScreen() {
-  const { cryptos, userId } = useCryptoData();
-
-  const [search, setSearch] = useState('');
   const colorScheme = useColorScheme() ?? 'light';
-  const [notifications, setNotifications] = useState<Notification[]>([]);
   const themedStyles = styles(colorScheme);
 
+  const { cryptos, userId } = useCryptoData();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [search, setSearch] = useState('');
+  
   useFocusEffect(
     useCallback(() => {
       if (!userId) return;

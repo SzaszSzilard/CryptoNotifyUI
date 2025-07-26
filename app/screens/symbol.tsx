@@ -10,12 +10,13 @@ import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity,
 export default function TrackedNotifications() {
   const { _, userId } = useCryptoData();
 
+  const colorScheme = useColorScheme() ?? 'light';
+  const themedStyles = styles(colorScheme);
+
   const { symbol } = useLocalSearchParams<{ symbol: string }>();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const colorScheme = useColorScheme() ?? 'light';
-  const themedStyles = styles(colorScheme);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -23,11 +24,11 @@ export default function TrackedNotifications() {
       setLoading(true);
 
       HttpService.get<Notification[]>(`user/${userId}/notifications`)
-      .then((notifications) => {
-        setNotifications(notifications.filter(n => n.symbol === symbol));
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+        .then((notifications) => {
+          setNotifications(notifications.filter(n => n.symbol === symbol));
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
     }, [userId, symbol])
   );
 
@@ -38,7 +39,6 @@ export default function TrackedNotifications() {
         text: 'Delete',
         style: 'destructive',
         onPress: () => {
-          // Build the body object
           const body: any = {
             id: notif.id,
             type: notif.type,
@@ -51,9 +51,9 @@ export default function TrackedNotifications() {
           }
 
           HttpService.delete<Notification>('notification/', body)
-          .then(() => {
-            setNotifications(notifications.filter(n => n.id !== notif.id));
-          })
+            .then(() => {
+              setNotifications(notifications.filter(n => n.id !== notif.id));
+            })
         },
       },
     ]);
@@ -81,7 +81,7 @@ export default function TrackedNotifications() {
           data={notifications}
           keyExtractor={n => n.id.toString()}
           renderItem={({ item: notification }) => {
-            
+
             let typeText = '';
             switch (notification.type) {
               case 'n-above':
