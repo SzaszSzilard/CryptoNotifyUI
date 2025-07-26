@@ -39,7 +39,7 @@ export default function TrackedNotifications() {
         text: 'Delete',
         style: 'destructive',
         onPress: () => {
-          const body: any = {
+          const body: Notification = {
             id: notif.id,
             type: notif.type,
             symbol: notif.symbol,

@@ -2,9 +2,10 @@ import { InformationBox } from '@/components/ui/CNF/InformationBox';
 import { useCryptoData } from '@/components/ui/CNF/RealTimeCrypto';
 import { CryptoPrice } from '@/models/CryptoPrice';
 import { Mode } from '@/models/Mode';
+import { Notification } from '@/models/Notification';
 import { HttpService } from '@/services/httpService';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, useColorScheme, View } from 'react-native';
 
 export default function NotificationSetup() {
@@ -13,19 +14,10 @@ export default function NotificationSetup() {
   const colorScheme = useColorScheme() ?? 'light';
   const themedStyles = styles(colorScheme);
 
-  const { symbol, mode = 'target' } = useLocalSearchParams<{ symbol?: string; mode?: Mode }>();
+  const { symbol, mode = 'target' } = useLocalSearchParams<{ symbol: string; mode?: Mode }>();
   const [crypto, setCrypto] = useState<CryptoPrice | null>(null);
-  const [targetPrice, setTargetPrice] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-
-  useEffect(() => {
-    const crypto = cryptos.filter(crypto => crypto.symbol === symbol).at(0);
-    setCrypto(crypto || null);
-    if (mode === 'percent' && crypto?.price !== null) {
-      setTargetPrice(crypto?.price || null);
-    }
-  }, [mode, cryptos]);
 
   const handleSubmit = async () => {
     if (!userId) {
@@ -35,7 +27,7 @@ export default function NotificationSetup() {
 
     setLoading(true);
 
-    const body: any = {
+    const body: Notification = {
       type: 'n-' + mode,
       userId: userId,
       symbol,

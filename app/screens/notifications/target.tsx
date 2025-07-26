@@ -2,6 +2,7 @@ import { InformationBox } from '@/components/ui/CNF/InformationBox';
 import { useCryptoData } from '@/components/ui/CNF/RealTimeCrypto';
 import { CryptoPrice } from '@/models/CryptoPrice';
 import { Mode } from '@/models/Mode';
+import { Notification } from '@/models/Notification';
 import { HttpService } from '@/services/httpService';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -13,10 +14,10 @@ export default function NotificationSetup() {
   const colorScheme = useColorScheme() ?? 'light';
   const themedStyles = styles(colorScheme);
 
-  const { symbol, mode = 'target' } = useLocalSearchParams<{ symbol?: string; mode?: Mode }>();
+  const { symbol, mode = 'target' } = useLocalSearchParams<{ symbol: string; mode?: Mode }>();
   const [crypto, setCrypto] = useState<CryptoPrice | null>(null);
   const [targetPrice, setTargetPrice] = useState<number | null>(null);
-  const [percentage, setPercentage] = useState<number | null>(null);
+  const [percentage, setPercentage] = useState<number | undefined>(undefined);
   const [isAbove, setIsAbove] = useState(true);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -51,7 +52,7 @@ export default function NotificationSetup() {
       type = isAbove ? 'n-percent-above' : 'n-percent-below';
     }
 
-    const body: any = {
+    const body: Notification = {
       type,
       userId: userId,
       symbol,
