@@ -42,12 +42,17 @@ export default function TrackedNotifications() {
           const body: any = {
             id: notif.id,
             type: notif.type,
-            userId: userId,
             symbol: notif.symbol,
-            price: notif.price,
+            userId: userId,
           };
           if (notif.percentage !== undefined && notif.percentage !== null) {
             body.percentage = notif.percentage;
+          }
+          if (notif.price !== undefined && notif.price !== null) {
+            body.price = notif.price;
+          }
+          if (notif.time !== undefined && notif.time !== null) {
+            body.time = notif.time;
           }
 
           HttpService.delete<Notification>('notification/', body)
@@ -79,8 +84,13 @@ export default function TrackedNotifications() {
       ) : (
         <FlatList
           data={notifications}
-          keyExtractor={n => n.id.toString()}
+          keyExtractor={n => n.id.toString() + n.type}
           renderItem={({ item: notification }) => {
+
+            let subText = `Target price: ${notification.price}`;
+            if (notification.type.includes('percent')) {
+              subText = `Price at creation: ${notification.price}`;
+            }
 
             let typeText = '';
             switch (notification.type) {
@@ -98,9 +108,11 @@ export default function TrackedNotifications() {
                 break;
               case 'n-rally':
                 typeText = `When crypto is Rallying`;
+                subText = `Rises or falls more than 2% in 60 minutes`;
                 break;
               case 'n-change':
                 typeText = `When price trend changes direction`;
+                subText = `Ignoring temporary fluctuations in 60 minutes`;
                 break;
               default:
                 typeText = `Unknown notification type: ${notification.type}`;
@@ -112,15 +124,9 @@ export default function TrackedNotifications() {
                   <Text style={themedStyles.notifText}>
                     {typeText}
                   </Text>
-                  {notification.type.includes('percent') ? (
-                    <Text style={themedStyles.notifText}>
-                      Price at creation: ${notification.price}
-                    </Text>
-                  ) : (
-                    <Text style={themedStyles.notifText}>
-                      Target price: ${notification.price}
-                    </Text>
-                  )}
+                  <Text style={themedStyles.notifText}>
+                    {subText}
+                  </Text>
                 </View>
                 <TouchableOpacity onPress={() => handleDelete(notification)}>
                   <FontAwesome name="trash" size={24} color={colorScheme === 'dark' ? '#e74c3c' : '#d35400'} />
