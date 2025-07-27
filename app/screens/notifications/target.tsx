@@ -23,7 +23,7 @@ export default function NotificationSetup() {
   const router = useRouter();
 
   useEffect(() => {
-    const crypto = cryptos.filter(crypto => crypto.symbol === symbol).at(0);
+    const crypto = cryptos.filter((crypto: CryptoPrice) => crypto.symbol === symbol).at(0);
     setCrypto(crypto || null);
     if (mode === 'percent' && crypto?.price !== null) {
       setTargetPrice(crypto?.price || null);
@@ -134,7 +134,7 @@ export default function NotificationSetup() {
             if (!isNaN(num)) {
               mode === 'target' ? setTargetPrice(num) : setPercentage(num);
             } else if (text.trim() === '') {
-              mode === 'target' ? setTargetPrice(null) : setPercentage(null);
+              mode === 'target' ? setTargetPrice(null) : setPercentage(undefined);
             }
           }}
           placeholder="6.66"

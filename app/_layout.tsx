@@ -1,11 +1,12 @@
 import { CryptoDataProvider } from '@/components/ui/CNF/RealTimeCrypto';
+import messaging from '@react-native-firebase/messaging';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Image, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { useEffect } from 'react';
+import { Alert, Image, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 
 function CryptoNotifyHeader({ colorScheme }: { colorScheme: string }) {
   return (
@@ -41,6 +42,15 @@ function CryptoNotifyHeader({ colorScheme }: { colorScheme: string }) {
 export default function RootLayout() {
   const theme = useColorScheme() ?? 'light';
 
+  useEffect(() => {
+    return messaging().onMessage(async (remoteMessage) => {
+      const { notification } = remoteMessage;
+      if (notification?.title && notification?.body) {
+        Alert.alert(notification.title, notification.body);
+      }
+    });
+  }, []);
+
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
@@ -56,23 +66,23 @@ export default function RootLayout() {
 
   return (
     <CryptoDataProvider>
-    <SafeAreaView style={themedStyles.safeArea}>
-      <ThemeProvider value={theme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack
-          screenOptions={{
-            headerTitle: () => <CryptoNotifyHeader colorScheme={theme} />,
-            headerStyle: {
-              backgroundColor: theme === 'dark' ? '#181a20' : '#fff',
-            },
-            headerTitleAlign: 'left',
-          }}
-        >
-          <Stack.Screen name="(tabs)" options={{ headerShown: true }} />
-          <Stack.Screen name="+not-found" />
-        </Stack>
-        <StatusBar style="auto" />
-      </ThemeProvider>
-    </SafeAreaView>
+      <SafeAreaView style={themedStyles.safeArea}>
+        <ThemeProvider value={theme === 'dark' ? DarkTheme : DefaultTheme}>
+          <Stack
+            screenOptions={{
+              headerTitle: () => <CryptoNotifyHeader colorScheme={theme} />,
+              headerStyle: {
+                backgroundColor: theme === 'dark' ? '#181a20' : '#fff',
+              },
+              headerTitleAlign: 'left',
+            }}
+          >
+            <Stack.Screen name="(tabs)" options={{ headerShown: true }} />
+            <Stack.Screen name="+not-found" />
+          </Stack>
+          <StatusBar style="auto" />
+        </ThemeProvider>
+      </SafeAreaView>
     </CryptoDataProvider>
   );
 }
