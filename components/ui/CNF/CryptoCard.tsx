@@ -48,6 +48,49 @@ export function CryptoCard({ crypto, notifCount }: CryptoCardProps) {
     transform: [{ rotate: `${rotationAnimation.value}deg` }],
   }));
 
+  const GEMINI_API_KEY = process.env.EXPO_PUBLIC_API_GEMINI_API_KEY;
+  const fetchGeminiSummary = async () => { 
+    try {
+      setLoading(true);
+      setModalVisible(true);
+      setSummary('');
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                {
+                  text: `Describe ${crypto.symbol.replace('USDT', '')} crypto, 2s`
+                },
+              ],
+            }],
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 50,
+            },
+          }),
+        }
+      );
+
+      const data = await response.json();
+      if (data.error) {
+        console.error(data.error);
+        setSummary('Gemini API error: ' + data.error.message);
+      } else {
+        setSummary(data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? 'No summary received.');
+      }
+      
+    } catch (error) {
+      console.error(error);
+      setSummary('Failed to load summary. Check your connection or API key.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <>
       <TouchableOpacity
