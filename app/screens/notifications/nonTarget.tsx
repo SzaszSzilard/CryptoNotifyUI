@@ -5,7 +5,7 @@ import { Mode } from '@/models/Mode';
 import { Notification } from '@/models/Notification';
 import { HttpService } from '@/services/httpService';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, useColorScheme, View } from 'react-native';
 
 export default function NotificationSetup() {
@@ -18,6 +18,11 @@ export default function NotificationSetup() {
   const [crypto, setCrypto] = useState<CryptoPrice | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    const crypto = cryptos.filter((crypto: CryptoPrice) => crypto.symbol === symbol).at(0);
+    setCrypto(crypto || null);
+  }, [cryptos]); 
 
   const handleSubmit = async () => {
     if (!userId) {
