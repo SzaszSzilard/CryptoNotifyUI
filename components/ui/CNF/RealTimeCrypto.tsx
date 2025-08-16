@@ -3,12 +3,7 @@ import { HttpService } from '@/services/httpService';
 import { getApp } from '@react-native-firebase/app';
 import { getMessaging, getToken } from '@react-native-firebase/messaging';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import CryptoDataContextInterface from './CryptoContextInterface';
-
-interface CryptoDataContextValue {
-  cryptos: CryptoPrice[];
-  userId: string;
-}
+import { CryptoDataContextInterface } from './CryptoContextInterface';
 
 const CryptoDataContext = createContext<CryptoDataContextInterface | undefined>(undefined);
 
