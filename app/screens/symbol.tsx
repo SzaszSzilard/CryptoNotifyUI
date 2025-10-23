@@ -2,14 +2,13 @@ import { useCryptoData } from '@/components/ui/CNF/RealTimeCrypto';
 import { Notification } from '@/models/Notification';
 import { HttpService } from '@/services/httpService';
 import { FontAwesome } from '@expo/vector-icons';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity, View, useColorScheme } from 'react-native';
 
 
 export default function TrackedNotifications() {
   const { _, userId } = useCryptoData();
-
   const colorScheme = useColorScheme() ?? 'light';
   const themedStyles = styles(colorScheme);
 
@@ -17,6 +16,8 @@ export default function TrackedNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const navigation = useNavigation();
+  const hasNavigated = useRef(false);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -31,6 +32,21 @@ export default function TrackedNotifications() {
         .catch(() => setLoading(false));
     }, [userId, symbol])
   );
+
+  // Override the back button to always go to the tabs index page
+  useEffect(() => {
+    const listener = navigation.addListener('beforeRemove', (e) => {
+      if (hasNavigated.current) return; // Prevent infinite loop
+      hasNavigated.current = true;
+      e.preventDefault();
+      router.replace('/');
+    });
+
+    return () => {
+      navigation.removeListener('beforeRemove', listener);
+      hasNavigated.current = false;
+    };
+  }, [navigation, router]);
 
   const handleDelete = (notif: Notification & { percentage?: number }) => {
     Alert.alert('Delete Notification', 'Are you sure?', [
