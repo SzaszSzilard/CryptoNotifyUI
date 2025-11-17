@@ -2,10 +2,56 @@ export default {
   expo: {
     name: "cryptonotifyui",
     slug: "cryptonotifyui",
-    scheme: "cryptonotifyui",
     version: "1.0.0",
+    orientation: "portrait",
+    icon: "./assets/images/alternateIcon.png",
+    scheme: "cryptonotifyui",
+    userInterfaceStyle: "automatic",
+    newArchEnabled: true,
+    ios: {
+      supportsTablet: true,
+      bundleIdentifier: "com.crypto.notify",
+      infoPlist: {
+        ITSAppUsesNonExemptEncryption: false
+      }
+    },
+    android: {
+      adaptiveIcon: {
+        foregroundImage: "./assets/images/alternateIcon.png",
+        backgroundColor: "#ffffff"
+      },
+      edgeToEdgeEnabled: true,
+      package: "com.crypto.notify",
+      googleServicesFile: "./google-services.json"
+    },
+    web: {
+      bundler: "metro",
+      output: "static",
+      favicon: "./assets/images/favicon.png"
+    },
+    plugins: [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          image: "./assets/images/alternateIcon.png",
+          imageWidth: 200,
+          resizeMode: "contain",
+          backgroundColor: "#00000000"
+        }
+      ],
+      "expo-secure-store"
+    ],
+    experiments: {
+      typedRoutes: true
+    },
     extra: {
       API_BASE_URL: "http://192.168.0.167:8080/api/",
+      router: {},
+      eas: {
+        projectId: "78989101-736b-47c3-b66f-207f9d3a663c"
+      }
     },
-  },
+    owner: "szilik"
+  }
 };
