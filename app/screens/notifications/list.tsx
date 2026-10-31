@@ -1,18 +1,20 @@
 import { NotificationTypeButton } from '@/components/ui/CNF/NotificationTypeLink';
+import { Mode } from '@/models/Mode';
 import { useLocalSearchParams } from 'expo-router';
+import React, { useMemo } from 'react';
 import { StyleSheet, Text, useColorScheme, View } from 'react-native';
 
-export default function NotificationTypes() {
-    const colorScheme = useColorScheme() ?? 'light';
-  const themedStyles = styles(colorScheme);
-  const { symbol } = useLocalSearchParams();
+const NOTIFICATION_TYPES: { title: string; mode: Mode }[] = [
+  { title: 'Price Target', mode: 'target' },
+  { title: 'Percentage Change', mode: 'percent' },
+  { title: 'Short term rally', mode: 'rally' },
+  { title: 'Change of direction', mode: 'change' },
+];
 
-  const notificationTypes = [
-    { title: 'Price Target', mode: 'target' },
-    { title: 'Percentage Change', mode: 'percent' },
-    { title: 'Short term rally', mode: 'rally' },
-    { title: 'Change of direction', mode: 'change' },
-  ];
+export default function NotificationTypes() {
+  const colorScheme = useColorScheme() ?? 'light';
+  const themedStyles = useMemo(() => styles(colorScheme), [colorScheme]);
+  const { symbol } = useLocalSearchParams<{ symbol: string }>();
 
   return (
     <View style={themedStyles.safeArea}>
@@ -24,13 +26,12 @@ export default function NotificationTypes() {
       </View>
 
       <View style={{ marginTop: 16 }}>
-        {notificationTypes.map(({ title, mode }) => (
+        {NOTIFICATION_TYPES.map(({ title, mode }) => (
           <NotificationTypeButton
             key={title}
             title={title}
             mode={mode}
             symbol={symbol as string}
-            colorScheme={colorScheme}
           />
         ))}
       </View>

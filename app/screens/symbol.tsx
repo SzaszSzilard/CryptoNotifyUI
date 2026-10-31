@@ -1,16 +1,24 @@
-import { useCryptoData } from '@/components/ui/CNF/RealTimeCrypto';
+import { useUserId } from '@/components/ui/CNF/RealTimeCrypto';
 import { Notification } from '@/models/Notification';
 import { HttpService } from '@/services/httpService';
 import { FontAwesome } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TouchableOpacity, View, useColorScheme } from 'react-native';
-
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  useColorScheme,
+} from 'react-native';
 
 export default function TrackedNotifications() {
-  const { _, userId } = useCryptoData();
+  const userId = useUserId();
   const colorScheme = useColorScheme() ?? 'light';
-  const themedStyles = styles(colorScheme);
+  const themedStyles = useMemo(() => styles(colorScheme), [colorScheme]);
 
   const { symbol } = useLocalSearchParams<{ symbol: string }>();
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -25,8 +33,8 @@ export default function TrackedNotifications() {
       setLoading(true);
 
       HttpService.get<Notification[]>(`user/${userId}/notifications`)
-        .then((notifications) => {
-          setNotifications(notifications.filter(n => n.symbol === symbol));
+        .then(allNotifications => {
+          setNotifications(allNotifications.filter(n => n.symbol === symbol));
           setLoading(false);
         })
         .catch(() => setLoading(false));
@@ -35,7 +43,7 @@ export default function TrackedNotifications() {
 
   // Override the back button to always go to the tabs index page
   useEffect(() => {
-    const listener = navigation.addListener('beforeRemove', (e) => {
+    const unsubscribe = (navigation as any).addListener('beforeRemove', (e: any) => {
       if (hasNavigated.current) return; // Prevent infinite loop
       hasNavigated.current = true;
       e.preventDefault();
@@ -43,7 +51,7 @@ export default function TrackedNotifications() {
     });
 
     return () => {
-      navigation.removeListener('beforeRemove', listener);
+      unsubscribe();
       hasNavigated.current = false;
     };
   }, [navigation, router]);
@@ -59,7 +67,7 @@ export default function TrackedNotifications() {
             id: notif.id,
             type: notif.type,
             symbol: notif.symbol,
-            userId: userId,
+            userId,
           };
           if (notif.percentage !== undefined && notif.percentage !== null) {
             body.percentage = notif.percentage;
@@ -71,10 +79,9 @@ export default function TrackedNotifications() {
             body.time = notif.time;
           }
 
-          HttpService.delete<Notification>('notification/', body)
-            .then(() => {
-              setNotifications(notifications.filter(n => n.id !== notif.id));
-            })
+          HttpService.delete<Notification>('notification/', body).then(() => {
+            setNotifications(prev => prev.filter(n => n.id !== notif.id));
+          });
         },
       },
     ]);
@@ -85,7 +92,7 @@ export default function TrackedNotifications() {
       <TouchableOpacity
         style={themedStyles.newButton}
         onPress={() => {
-          router.push({ pathname: '../screens/notifications/list', params: { symbol } });
+          router.push({ pathname: '/screens/notifications/list', params: { symbol } });
         }}
       >
         <Text style={themedStyles.newButtonText}>
@@ -96,13 +103,17 @@ export default function TrackedNotifications() {
         </Text>
       </TouchableOpacity>
       {loading ? (
-        <ActivityIndicator size="large" color={colorScheme === 'dark' ? '#87ceeb' : '#2980ff'} style={{ marginTop: 40 }} />
+        <ActivityIndicator
+          size="large"
+          color={colorScheme === 'dark' ? '#87ceeb' : '#2980ff'}
+          style={{ marginTop: 40 }}
+        />
       ) : (
         <FlatList
           data={notifications}
-          keyExtractor={n => n.id.toString() + n.type}
+          keyExtractor={(n, idx) => `${n.id ?? idx}-${n.type}`}
+          keyboardShouldPersistTaps="handled"
           renderItem={({ item: notification }) => {
-
             let subText = `Target price: ${notification.price}`;
             if (notification.type.includes('percent')) {
               subText = `Price at creation: ${notification.price}`;
@@ -137,20 +148,22 @@ export default function TrackedNotifications() {
             return (
               <View style={themedStyles.notifCard}>
                 <View style={{ flex: 1 }}>
-                  <Text style={themedStyles.notifText}>
-                    {typeText}
-                  </Text>
-                  <Text style={themedStyles.notifText}>
-                    {subText}
-                  </Text>
+                  <Text style={themedStyles.notifText}>{typeText}</Text>
+                  <Text style={themedStyles.notifText}>{subText}</Text>
                 </View>
                 <TouchableOpacity onPress={() => handleDelete(notification)}>
-                  <FontAwesome name="trash" size={24} color={colorScheme === 'dark' ? '#e74c3c' : '#d35400'} />
+                  <FontAwesome
+                    name="trash"
+                    size={24}
+                    color={colorScheme === 'dark' ? '#e74c3c' : '#d35400'}
+                  />
                 </TouchableOpacity>
               </View>
             );
           }}
-          ListEmptyComponent={<Text style={themedStyles.empty}>No notifications for this symbol.</Text>}
+          ListEmptyComponent={
+            <Text style={themedStyles.empty}>No notifications for this symbol.</Text>
+          }
         />
       )}
     </View>
@@ -165,7 +178,7 @@ const styles = (colorScheme: string) =>
       padding: 16,
     },
     newButton: {
-      backgroundColor: colorScheme === 'dark' ? '#47ceeb' : '#87ceeb', // skyblue for both themes
+      backgroundColor: colorScheme === 'dark' ? '#47ceeb' : '#87ceeb',
       borderRadius: 10,
       padding: 14,
       alignItems: 'center',

@@ -1,17 +1,13 @@
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
-import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
-import CryptoListScreen from './crypto-list';
-import HomeScreen from './index';
-
-const TopTabs = createMaterialTopTabNavigator();
+import { TopTabs } from 'expo-router/js-top-tabs';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
 
   return (
-    <TopTabs.Navigator
+    <TopTabs
       screenOptions={{
         swipeEnabled: true,
         tabBarActiveTintColor: colorScheme === 'dark' ? '#fff' : '#0a7ea4',
@@ -23,22 +19,20 @@ export default function TabLayout() {
     >
       <TopTabs.Screen
         name="index"
-        component={HomeScreen}
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={24} name="house.fill" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="house.fill" color={color as string} />,
         }}
       />
       <TopTabs.Screen
         name="crypto-list"
-        component={CryptoListScreen}
         options={{
           title: 'Crypto List',
           tabBarIcon: ({ color }) => (
             <FontAwesome6 name="coins" size={24} color={color} />
-          ), 
+          ),
         }}
       />
-    </TopTabs.Navigator>
+    </TopTabs>
   );
 }

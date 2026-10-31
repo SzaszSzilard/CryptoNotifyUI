@@ -1,6 +1,6 @@
 import { Mode } from '@/models/Mode';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, useColorScheme } from 'react-native';
 
 interface Props {
@@ -12,14 +12,16 @@ interface Props {
 export const NotificationTypeButton: React.FC<Props> = ({ title, mode, symbol }) => {
   const router = useRouter();
   const colorScheme = useColorScheme() ?? 'light';
-  const themedStyles = getStyles(colorScheme);
+  const themedStyles = useMemo(() => getStyles(colorScheme), [colorScheme]);
   const isTargetMode = mode === 'target' || mode === 'percent';
 
   return (
     <Pressable
       onPress={() =>
         router.push({
-          pathname: '/screens/notifications/' + (isTargetMode ? 'target' : 'nonTarget'),
+          pathname: isTargetMode
+            ? '/screens/notifications/target'
+            : '/screens/notifications/nonTarget',
           params: { symbol, mode },
         })
       }

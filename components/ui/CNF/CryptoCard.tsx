@@ -1,6 +1,6 @@
 import { FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { memo, useEffect, useMemo, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -23,149 +23,164 @@ type CryptoCardProps = {
   notifCount: Record<string, number>;
 };
 
-export function CryptoCard({ crypto, notifCount }: CryptoCardProps) {
-  const router = useRouter();
-  const colorScheme = useColorScheme() ?? 'light';
-  const themedStyles = getStyles(colorScheme);
+export const CryptoCard = memo(
+  function CryptoCard({ crypto, notifCount }: CryptoCardProps) {
+    const router = useRouter();
+    const colorScheme = useColorScheme() ?? 'light';
+    const themedStyles = useMemo(() => getStyles(colorScheme), [colorScheme]);
 
-  const [loading, setLoading] = useState(false);
-  const [summary, setSummary] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [summary, setSummary] = useState('');
+    const [modalVisible, setModalVisible] = useState(false);
 
-  const [modalVisible, setModalVisible] = useState(false);
+    const rotationAnimation = useSharedValue(0);
+    useEffect(() => {
+      rotationAnimation.value = withRepeat(
+        withSequence(
+          withTiming(25, { duration: 150 }),
+          withTiming(0, { duration: 150 })
+        ),
+        4
+      );
+    }, [rotationAnimation]);
 
-  const rotationAnimation = useSharedValue(0);
-  useEffect(() => {
-    rotationAnimation.value = withRepeat(
-      withSequence(
-        withTiming(25, { duration: 150 }),
-        withTiming(0, { duration: 150 })
-      ),
-      4
-    );
-  }, []);
+    const animatedStyle = useAnimatedStyle(() => ({
+      transform: [{ rotate: `${rotationAnimation.value}deg` }],
+    }));
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${rotationAnimation.value}deg` }],
-  }));
+    const GEMINI_API_KEY = process.env.EXPO_PUBLIC_API_GEMINI_API_KEY;
+    const fetchGeminiSummary = async () => {
+      try {
+        setLoading(true);
+        setModalVisible(true);
+        setSummary('');
 
-  const GEMINI_API_KEY = process.env.EXPO_PUBLIC_API_GEMINI_API_KEY;
-  const fetchGeminiSummary = async () => { 
-    try {
-      setLoading(true);
-      setModalVisible(true);
-      setSummary('');
-
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            contents: [{
-              parts: [
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              contents: [
                 {
-                  text: `Describe ${crypto.symbol.replace('USDT', '')} crypto, 2s`
+                  parts: [
+                    {
+                      text: `Describe ${crypto.symbol.replace('USDT', '')} crypto, 2s`,
+                    },
+                  ],
                 },
               ],
-            }],
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 50,
-            },
-          }),
-        }
-      );
+              generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 50,
+              },
+            }),
+          }
+        );
 
-      const data = await response.json();
-      if (data.error) {
-        console.error(data.error);
-        setSummary('Gemini API error: ' + data.error.message);
-      } else {
-        setSummary(data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? 'No summary received.');
+        const data = await response.json();
+        if (data.error) {
+          console.error(data.error);
+          setSummary('Gemini API error: ' + data.error.message);
+        } else {
+          setSummary(
+            data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ??
+              'No summary received.'
+          );
+        }
+      } catch (error) {
+        console.error(error);
+        setSummary('Failed to load summary. Check your connection or API key.');
+      } finally {
+        setLoading(false);
       }
-      
-    } catch (error) {
-      console.error(error);
-      setSummary('Failed to load summary. Check your connection or API key.');
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  return (
-    <>
-      <TouchableOpacity
-        style={themedStyles.cryptoCard}
-        activeOpacity={0.85}
-        onPress={() =>
-          router.push({
-            pathname: '/screens/notifications/list',
-            params: { symbol: crypto.symbol },
-          })
-        }
-      >
-        <TouchableOpacity onPress={fetchGeminiSummary} style={themedStyles.infoButton}>
-          <FontAwesome
-            name="info-circle"
-            size={24}
-            color={colorScheme === 'dark' ? '#87ceeb' : '#2980ff'}
-          />
-        </TouchableOpacity>
+    const count = notifCount[crypto.symbol] || 0;
 
-        <View style={{ flex: 1, marginHorizontal: 12 }}>
-          <Text style={themedStyles.cryptoName}>
-            {crypto.symbol.replace('USDT', '/USD')}
-          </Text>
-          <Text style={themedStyles.cryptoPrice}>
-            ${crypto.price > 1 ? crypto.price.toFixed(2) : crypto.price.toFixed(8)}
-          </Text>
-        </View>
-
+    return (
+      <>
         <TouchableOpacity
-          style={{ position: 'relative', justifyContent: 'center', alignItems: 'center' }}
+          style={themedStyles.cryptoCard}
+          activeOpacity={0.85}
           onPress={() =>
             router.push({
-              pathname: '/screens/symbol',
+              pathname: '/screens/notifications/list',
               params: { symbol: crypto.symbol },
             })
           }
         >
-          <Animated.View style={animatedStyle}>
-            <FontAwesome name="bell" size={24} color="#87ceeb" />
-          </Animated.View>
-          {notifCount[crypto.symbol] > 0 && (
-            <View style={themedStyles.bubble}>
-              <Text style={themedStyles.bubbleText}>{notifCount[crypto.symbol]}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      </TouchableOpacity>
+          <TouchableOpacity onPress={fetchGeminiSummary} style={themedStyles.infoButton}>
+            <FontAwesome
+              name="info-circle"
+              size={24}
+              color={colorScheme === 'dark' ? '#87ceeb' : '#2980ff'}
+            />
+          </TouchableOpacity>
 
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={themedStyles.modalOverlay}>
-          <View style={themedStyles.modalContent}>
-            <Text style={themedStyles.modalTitle}>AI Summary</Text>
-
-            <Text style={themedStyles.modalText}>
-              {loading
-                ? 'Loading summary...'
-                : summary
-              }
+          <View style={{ flex: 1, marginHorizontal: 12 }}>
+            <Text style={themedStyles.cryptoName}>
+              {crypto.symbol.replace('USDT', '/USD')}
             </Text>
-
-            <Pressable style={themedStyles.modalButton} onPress={() => setModalVisible(false)}>
-              <Text style={themedStyles.modalButtonText}>Close</Text>
-            </Pressable>
+            <Text style={themedStyles.cryptoPrice}>
+              ${crypto.price > 1 ? crypto.price.toFixed(2) : crypto.price.toFixed(8)}
+            </Text>
           </View>
-        </View>
-      </Modal>
-    </>
-  );
-}
+
+          <TouchableOpacity
+            style={{ position: 'relative', justifyContent: 'center', alignItems: 'center' }}
+            onPress={() =>
+              router.push({
+                pathname: '/screens/symbol',
+                params: { symbol: crypto.symbol },
+              })
+            }
+          >
+            <Animated.View style={animatedStyle}>
+              <FontAwesome name="bell" size={24} color="#87ceeb" />
+            </Animated.View>
+            {count > 0 && (
+              <View style={themedStyles.bubble}>
+                <Text style={themedStyles.bubbleText}>{count}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </TouchableOpacity>
+
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <View style={themedStyles.modalOverlay}>
+            <View style={themedStyles.modalContent}>
+              <Text style={themedStyles.modalTitle}>AI Summary</Text>
+
+              <Text style={themedStyles.modalText}>
+                {loading ? 'Loading summary...' : summary}
+              </Text>
+
+              <Pressable
+                style={themedStyles.modalButton}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={themedStyles.modalButtonText}>Close</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+      </>
+    );
+  },
+  (prev, next) =>
+    prev.crypto.symbol === next.crypto.symbol &&
+    prev.crypto.price === next.crypto.price &&
+    (prev.notifCount[prev.crypto.symbol] || 0) ===
+      (next.notifCount[next.crypto.symbol] || 0)
+);
 
 const getStyles = (colorScheme: string) =>
   StyleSheet.create({

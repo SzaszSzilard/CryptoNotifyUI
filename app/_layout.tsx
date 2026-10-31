@@ -1,10 +1,10 @@
 import { CryptoDataProvider } from '@/components/ui/CNF/RealTimeCrypto';
-import messaging from '@react-native-firebase/messaging';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { getApp } from '@react-native-firebase/app';
+import { getMessaging, onMessage } from '@react-native-firebase/messaging';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Alert, Image, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -43,26 +43,36 @@ export default function RootLayout() {
   const theme = useColorScheme() ?? 'light';
 
   useEffect(() => {
-    return messaging().onMessage(async (remoteMessage) => {
-      const { notification } = remoteMessage;
-      if (notification?.title && notification?.body) {
-        Alert.alert(notification.title, notification.body);
-      }
-    });
+    try {
+      const messagingInstance = getMessaging(getApp());
+      return onMessage(messagingInstance, async remoteMessage => {
+        const { notification } = remoteMessage;
+        if (notification?.title && notification?.body) {
+          Alert.alert(notification.title, notification.body);
+        }
+      });
+    } catch (error) {
+      console.error('Firebase onMessage setup error:', error);
+      return undefined;
+    }
   }, []);
 
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
-  if (!loaded) return null;
+  const themedStyles = useMemo(
+    () =>
+      StyleSheet.create({
+        safeArea: {
+          flex: 1,
+          backgroundColor: theme === 'dark' ? '#181a20' : '#f5f6fa',
+        },
+      }),
+    [theme]
+  );
 
-  const themedStyles = StyleSheet.create({
-    safeArea: {
-      flex: 1,
-      backgroundColor: theme === 'dark' ? '#181a20' : '#f5f6fa',
-    },
-  });
+  if (!loaded) return null;
 
   return (
     <CryptoDataProvider>

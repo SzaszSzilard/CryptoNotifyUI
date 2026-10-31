@@ -1,41 +1,82 @@
 import { CryptoCard } from '@/components/ui/CNF/CryptoCard';
-import { useCryptoData } from '@/components/ui/CNF/RealTimeCrypto';
+import { useCryptoData, useUserId } from '@/components/ui/CNF/RealTimeCrypto';
+import { CryptoPrice } from '@/models/CryptoPrice';
+import { Notification } from '@/models/Notification';
 import { HttpService } from '@/services/httpService';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
-import { FlatList, KeyboardAvoidingView, StyleSheet, Text, TextInput, useColorScheme } from 'react-native';
+import {
+  FlatList,
+  KeyboardAvoidingView,
+  StyleSheet,
+  Text,
+  TextInput,
+  useColorScheme,
+} from 'react-native';
 
-export default function CryptoListScreen() {
-  const colorScheme = useColorScheme() ?? 'light';
-  const themedStyles = styles(colorScheme);
+interface CryptoListContentProps {
+  search: string;
+  notifCount: Record<string, number>;
+  emptyTextStyle: object;
+}
 
-  const { cryptos, userId } = useCryptoData();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [search, setSearch] = useState('');
-  
-  useFocusEffect(
-    useCallback(() => {
-      if (!userId) return;
-      
-      HttpService.get<Notification[]>(`user/${userId}/notifications`)
-        .then(setNotifications)
-        .catch((e) => console.error('Failed to load notifications', e))
-    }, [userId])
-  );
+function CryptoListContent({ search, notifCount, emptyTextStyle }: CryptoListContentProps) {
+  const { cryptos } = useCryptoData();
 
   const filteredCryptos = useMemo(() => {
     if (!search.trim()) return cryptos;
     const lower = search.trim().toLowerCase();
-    return cryptos.filter(crypto =>
-      crypto.symbol.toLowerCase().includes(lower) ||
-      crypto.symbol.replace('USDT', '/USD').toLowerCase().includes(lower)
+    return cryptos.filter(
+      crypto =>
+        crypto.symbol.toLowerCase().includes(lower) ||
+        crypto.symbol.replace('USDT', '/USD').toLowerCase().includes(lower)
     );
   }, [cryptos, search]);
 
-  const notifCount: Record<string, number> = {};
-  notifications.forEach(n => {
-    notifCount[n.symbol] = (notifCount[n.symbol] || 0) + 1;
-  });
+  const renderItem = useCallback(
+    ({ item }: { item: CryptoPrice }) => (
+      <CryptoCard crypto={item} notifCount={notifCount} />
+    ),
+    [notifCount]
+  );
+
+  return (
+    <FlatList
+      data={filteredCryptos}
+      keyExtractor={crypto => crypto.symbol}
+      renderItem={renderItem}
+      keyboardShouldPersistTaps="handled"
+      ListEmptyComponent={<Text style={emptyTextStyle}>No cryptos found.</Text>}
+      style={{ flex: 1 }}
+    />
+  );
+}
+
+export default function CryptoListScreen() {
+  const colorScheme = useColorScheme() ?? 'light';
+  const themedStyles = useMemo(() => styles(colorScheme), [colorScheme]);
+
+  const userId = useUserId();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [search, setSearch] = useState('');
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!userId) return;
+
+      HttpService.get<Notification[]>(`user/${userId}/notifications`)
+        .then(setNotifications)
+        .catch(e => console.error('Failed to load notifications', e));
+    }, [userId])
+  );
+
+  const notifCount = useMemo(() => {
+    const counts: Record<string, number> = {};
+    notifications.forEach(n => {
+      counts[n.symbol] = (counts[n.symbol] || 0) + 1;
+    });
+    return counts;
+  }, [notifications]);
 
   return (
     <KeyboardAvoidingView style={themedStyles.container}>
@@ -47,16 +88,14 @@ export default function CryptoListScreen() {
         onChangeText={setSearch}
       />
 
-      <FlatList
-        data={filteredCryptos}
-        keyExtractor={crypto => crypto.symbol}
-        renderItem={({ item }) => <CryptoCard crypto={item} notifCount={notifCount} />}
-        ListEmptyComponent={<Text style={themedStyles.emptyText}>No cryptos found.</Text>}
-        style={{ flex: 1 }}
+      <CryptoListContent
+        search={search}
+        notifCount={notifCount}
+        emptyTextStyle={themedStyles.emptyText}
       />
     </KeyboardAvoidingView>
   );
-};
+}
 
 const CARD_HEIGHT = 64;
 const styles = (colorScheme: string | null) =>
