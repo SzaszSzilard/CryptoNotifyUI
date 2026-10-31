@@ -1,14 +1,21 @@
+import { ThemedText } from '@/components/ThemedText';
+import { CryptoCard } from '@/components/ui/CNF/CryptoCard';
 import { useCryptoData } from '@/components/ui/CNF/RealTimeCrypto';
+import { CryptoPrice } from '@/models/CryptoPrice';
 import { Notification } from '@/models/Notification';
 import { HttpService } from '@/services/httpService';
 import { FontAwesome } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
-import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View, useColorScheme } from 'react-native';
-
-import { ThemedText } from '@/components/ThemedText';
-import { CryptoCard } from '@/components/ui/CNF/CryptoCard';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  useColorScheme,
+} from 'react-native';
 
 export default function HomeScreen() {
   const { cryptos, userId } = useCryptoData();
@@ -20,21 +27,44 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
-        if (!userId) return;
+      if (!userId) return;
 
-        HttpService.get<Notification[]>(`user/${userId}/notifications`)
+      HttpService.get<Notification[]>(`user/${userId}/notifications`)
         .then(setNotifications)
-        .catch((e) => console.error('Failed to load notifications', e))
+        .catch(e => console.error('Failed to load notifications', e))
         .finally(() => setLoading(false));
     }, [userId])
   );
 
-  const themedStyles = styles(colorScheme);
+  const themedStyles = useMemo(() => styles(colorScheme), [colorScheme]);
+
+  const notifCount = useMemo(() => {
+    const counts: Record<string, number> = {};
+    notifications.forEach(n => {
+      counts[n.symbol] = (counts[n.symbol] || 0) + 1;
+    });
+    return counts;
+  }, [notifications]);
+
+  const trackedCryptos = useMemo(
+    () => cryptos.filter(crypto => notifCount[crypto.symbol] > 0),
+    [cryptos, notifCount]
+  );
+
+  const renderItem = useCallback(
+    ({ item: crypto }: { item: CryptoPrice }) => (
+      <CryptoCard crypto={crypto} notifCount={notifCount} />
+    ),
+    [notifCount]
+  );
 
   if (loading) {
     return (
       <View style={themedStyles.centered}>
-        <ActivityIndicator size="large" color={colorScheme === 'dark' ? '#87ceeb' : '#36525E'} />
+        <ActivityIndicator
+          size="large"
+          color={colorScheme === 'dark' ? '#87ceeb' : '#36525E'}
+        />
       </View>
     );
   }
@@ -56,21 +86,15 @@ export default function HomeScreen() {
     );
   }
 
-  const notifCount: Record<string, number> = {};
-  notifications.forEach(n => {
-    notifCount[n.symbol] = (notifCount[n.symbol] || 0) + 1;
-  });
-
   return (
     <FlatList
-      data={cryptos.filter(crypto => notifCount[crypto.symbol] > 0)}
+      data={trackedCryptos}
       keyExtractor={crypto => crypto.symbol}
+      keyboardShouldPersistTaps="handled"
       ListHeaderComponent={
         <ThemedText style={themedStyles.header}>Your Tracked Cryptos</ThemedText>
       }
-      renderItem={({ item: crypto }) => (
-        <CryptoCard crypto={crypto} notifCount={notifCount} />
-      )}
+      renderItem={renderItem}
       contentContainerStyle={{ paddingBottom: 24, paddingHorizontal: 16 }}
     />
   );

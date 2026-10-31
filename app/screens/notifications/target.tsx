@@ -1,48 +1,130 @@
 import { InformationBox } from '@/components/ui/CNF/InformationBox';
-import { useCryptoData } from '@/components/ui/CNF/RealTimeCrypto';
+import { useCryptoData, useLatestCryptoGetter, useUserId } from '@/components/ui/CNF/RealTimeCrypto';
 import { CryptoPrice } from '@/models/CryptoPrice';
 import { Mode } from '@/models/Mode';
 import { Notification } from '@/models/Notification';
 import { HttpService } from '@/services/httpService';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import {
+  Alert,
+  Keyboard,
+  Pressable,
+  ScrollView,
+  StyleProp,
+  StyleSheet,
+  Text,
+  TextInput,
+  TextStyle,
+  useColorScheme,
+  View,
+} from 'react-native';
+
+function LiveSymbolPrice({ symbol, style }: { symbol?: string; style: StyleProp<TextStyle> }) {
+  const { cryptos } = useCryptoData();
+  const crypto = useMemo(
+    () => cryptos.find((c: CryptoPrice) => c.symbol === symbol) ?? null,
+    [cryptos, symbol]
+  );
+
+  return (
+    <Text style={style}>
+      {typeof symbol === 'string'
+        ? `${symbol.replace('USDT', '/USD')}: $${
+            crypto?.price !== undefined
+              ? crypto.price.toLocaleString(undefined, { minimumFractionDigits: 2 })
+              : '...'
+          }`
+        : ''}
+    </Text>
+  );
+}
+
+interface TargetSelectorProps {
+  mode: Mode;
+  isAbove: boolean;
+  onSelectAbove: (value: boolean) => void;
+  themedStyles: ReturnType<typeof styles>;
+}
+
+function TargetSelector({ mode, isAbove, onSelectAbove, themedStyles }: TargetSelectorProps) {
+  return (
+    <View style={themedStyles.selectorRow}>
+      <Pressable
+        style={[
+          themedStyles.selectorButton,
+          isAbove ? themedStyles.selectorActiveAbove : themedStyles.selectorInactive,
+        ]}
+        onPress={() => onSelectAbove(true)}
+      >
+        <Text
+          style={[
+            themedStyles.selectorText,
+            isAbove ? themedStyles.selectorTextActive : themedStyles.selectorTextInactive,
+          ]}
+        >
+          {mode === 'percent' ? 'Rises' : 'Above'}
+        </Text>
+      </Pressable>
+      <View style={themedStyles.selectorDivider} />
+      <Pressable
+        style={[
+          themedStyles.selectorButton,
+          !isAbove ? themedStyles.selectorActiveBelow : themedStyles.selectorInactive,
+        ]}
+        onPress={() => onSelectAbove(false)}
+      >
+        <Text
+          style={[
+            themedStyles.selectorText,
+            !isAbove ? themedStyles.selectorTextActive : themedStyles.selectorTextInactive,
+          ]}
+        >
+          {mode === 'percent' ? 'Falls' : 'Below'}
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
 
 export default function NotificationSetup() {
-  const { cryptos, userId } = useCryptoData();
+  const userId = useUserId();
+  const getLatestCrypto = useLatestCryptoGetter();
 
   const colorScheme = useColorScheme() ?? 'light';
-  const themedStyles = styles(colorScheme);
+  const themedStyles = useMemo(() => styles(colorScheme), [colorScheme]);
 
   const { symbol, mode = 'target' } = useLocalSearchParams<{ symbol: string; mode?: Mode }>();
-  const [crypto, setCrypto] = useState<CryptoPrice | null>(null);
-  const [targetPrice, setTargetPrice] = useState<number | null>(null);
-  const [percentage, setPercentage] = useState<number | undefined>(undefined);
+  const [inputText, setInputText] = useState<string>('');
   const [isAbove, setIsAbove] = useState(true);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  useEffect(() => {
-    const crypto = cryptos.filter((crypto: CryptoPrice) => crypto.symbol === symbol).at(0);
-    setCrypto(crypto || null);
-    if (mode === 'percent' && crypto?.price !== null) {
-      setTargetPrice(crypto?.price || null);
-    }
-  }, [mode, cryptos]);
-
   const handleSubmit = async () => {
+    Keyboard.dismiss();
+
     if (!userId) {
       Alert.alert('User ID error', 'Could not retrieve user ID.');
       return;
     }
-    if (!targetPrice || isNaN(Number(targetPrice))) {
+
+    const parsedValue = parseFloat(inputText.replace(',', '.').trim());
+    if (!inputText.trim() || isNaN(parsedValue) || parsedValue <= 0) {
+      Alert.alert(
+        'Invalid input',
+        mode === 'percent' ? 'Please enter a valid percentage.' : 'Please enter a valid price.'
+      );
+      return;
+    }
+
+    const latestPrice = getLatestCrypto(symbol)?.price;
+    const priceToSubmit = mode === 'percent' ? latestPrice : parsedValue;
+
+    if (priceToSubmit === undefined || priceToSubmit === null || isNaN(Number(priceToSubmit))) {
       Alert.alert('Invalid input', 'Please enter a valid price.');
       return;
     }
-    if (mode === 'percent' && (!percentage || isNaN(Number(percentage)))) {
-      Alert.alert('Invalid input', 'Please enter a valid percentage.');
-      return;
-    }
+
     setLoading(true);
 
     let type = '';
@@ -54,110 +136,81 @@ export default function NotificationSetup() {
 
     const body: Notification = {
       type,
-      userId: userId,
+      userId,
       symbol,
-      price: targetPrice,
+      price: priceToSubmit,
     };
     if (mode === 'percent') {
-      body.percentage = percentage;
+      body.percentage = parsedValue;
     }
 
     try {
-      await HttpService.post<void>(`notification/`, body);
+      await HttpService.post<void>('notification/', body);
       Alert.alert('Success', 'Notification set!');
       router.replace({ pathname: '/screens/symbol', params: { symbol } });
     } catch (e) {
       console.error('Network error:', e);
       Alert.alert('Error', 'Failed to set notification.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  function TargetSelector() {
-    return (
-      <View style={themedStyles.selectorRow}>
-        <Pressable
-          style={[
-            themedStyles.selectorButton,
-            isAbove ? themedStyles.selectorActiveAbove : themedStyles.selectorInactive,
-          ]}
-          onPress={() => setIsAbove(true)}
-        >
-          <Text style={[
-            themedStyles.selectorText,
-            isAbove ? themedStyles.selectorTextActive : themedStyles.selectorTextInactive,
-          ]}>
-            {mode === 'percent' ? 'Rises' : 'Above'}
-          </Text>
-        </Pressable>
-        <View style={themedStyles.selectorDivider} />
-        <Pressable
-          style={[
-            themedStyles.selectorButton,
-            !isAbove ? themedStyles.selectorActiveBelow : themedStyles.selectorInactive,
-          ]}
-          onPress={() => setIsAbove(false)}
-        >
-          <Text style={[
-            themedStyles.selectorText,
-            !isAbove ? themedStyles.selectorTextActive : themedStyles.selectorTextInactive,
-          ]}>
-            {mode === 'percent' ? 'Falls' : 'Below'}
-          </Text>
-        </Pressable>
-      </View>
-    );
-  }
-
   return (
-    <View style={themedStyles.main}>
+    <ScrollView
+      style={themedStyles.scroll}
+      contentContainerStyle={themedStyles.main}
+      keyboardShouldPersistTaps="handled"
+    >
       <Text style={themedStyles.title}>
         {mode === 'percent' ? 'Percentage Change Notification' : 'Price Target Notification'}
       </Text>
 
-      <Text style={[themedStyles.title, themedStyles.symbolPrice]}>
-        {typeof symbol === 'string' ?
-          `${symbol.replace('USDT', '/USD')}: $${crypto?.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
-          : ''}
-      </Text>
+      <LiveSymbolPrice symbol={symbol} style={[themedStyles.title, themedStyles.symbolPrice]} />
 
       <InformationBox mode={mode as Mode} />
 
-      <Text style={themedStyles.label}>{mode === 'target' ? "Target Price" : "Target Percentage (%)"}</Text>
+      <Text style={themedStyles.label}>
+        {mode === 'target' ? 'Target Price' : 'Target Percentage (%)'}
+      </Text>
       {['target', 'percent'].includes(mode) && (
         <TextInput
           style={themedStyles.input}
-          keyboardType="numeric"
-          value={(mode === 'target' ? targetPrice : percentage)?.toString() ?? ''}
-          onChangeText={(text) => {
-            const num = Number(text);
-            if (!isNaN(num)) {
-              mode === 'target' ? setTargetPrice(num) : setPercentage(num);
-            } else if (text.trim() === '') {
-              mode === 'target' ? setTargetPrice(null) : setPercentage(undefined);
-            }
-          }}
+          keyboardType="decimal-pad"
+          value={inputText}
+          onChangeText={setInputText}
           placeholder="6.66"
           placeholderTextColor={colorScheme === 'dark' ? '#b2bec3' : '#636e72'}
         />
       )}
-      <TargetSelector />
+      <TargetSelector
+        mode={mode as Mode}
+        isAbove={isAbove}
+        onSelectAbove={setIsAbove}
+        themedStyles={themedStyles}
+      />
       <Pressable
-        style={themedStyles.button}
+        style={({ pressed }) => [
+          themedStyles.button,
+          pressed && { opacity: 0.85 },
+        ]}
         onPress={handleSubmit}
         disabled={loading}
       >
         <Text style={themedStyles.buttonText}>{loading ? 'Submitting...' : 'Submit'}</Text>
       </Pressable>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = (colorScheme: string | null) =>
   StyleSheet.create({
-    main: {
+    scroll: {
       flex: 1,
       backgroundColor: colorScheme === 'dark' ? '#181a20' : '#f5f6fa',
+    },
+    main: {
+      flexGrow: 1,
       padding: 24,
     },
     title: {

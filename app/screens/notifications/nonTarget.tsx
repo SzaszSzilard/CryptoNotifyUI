@@ -1,28 +1,51 @@
 import { InformationBox } from '@/components/ui/CNF/InformationBox';
-import { useCryptoData } from '@/components/ui/CNF/RealTimeCrypto';
+import { useCryptoData, useUserId } from '@/components/ui/CNF/RealTimeCrypto';
 import { CryptoPrice } from '@/models/CryptoPrice';
 import { Mode } from '@/models/Mode';
 import { Notification } from '@/models/Notification';
 import { HttpService } from '@/services/httpService';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, useColorScheme, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import {
+  Alert,
+  Pressable,
+  StyleProp,
+  StyleSheet,
+  Text,
+  TextStyle,
+  useColorScheme,
+  View,
+} from 'react-native';
+
+function LiveSymbolPrice({ symbol, style }: { symbol?: string; style: StyleProp<TextStyle> }) {
+  const { cryptos } = useCryptoData();
+  const crypto = useMemo(
+    () => cryptos.find((c: CryptoPrice) => c.symbol === symbol) ?? null,
+    [cryptos, symbol]
+  );
+
+  return (
+    <Text style={style}>
+      {typeof symbol === 'string'
+        ? `${symbol.replace('USDT', '/USD')}: $${
+            crypto?.price !== undefined
+              ? crypto.price.toLocaleString(undefined, { minimumFractionDigits: 2 })
+              : '...'
+          }`
+        : ''}
+    </Text>
+  );
+}
 
 export default function NotificationSetup() {
-  const { cryptos, userId } = useCryptoData();
+  const userId = useUserId();
 
   const colorScheme = useColorScheme() ?? 'light';
-  const themedStyles = styles(colorScheme);
+  const themedStyles = useMemo(() => styles(colorScheme), [colorScheme]);
 
   const { symbol, mode = 'target' } = useLocalSearchParams<{ symbol: string; mode?: Mode }>();
-  const [crypto, setCrypto] = useState<CryptoPrice | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-
-  useEffect(() => {
-    const crypto = cryptos.filter((crypto: CryptoPrice) => crypto.symbol === symbol).at(0);
-    setCrypto(crypto || null);
-  }, [cryptos]); 
 
   const handleSubmit = async () => {
     if (!userId) {
@@ -34,23 +57,22 @@ export default function NotificationSetup() {
 
     const body: Notification = {
       type: 'n-' + mode,
-      userId: userId,
+      userId,
       symbol,
       time: 60,
     };
 
     try {
-      await HttpService.post<void>(`notification/`, body);
+      await HttpService.post<void>('notification/', body);
       Alert.alert('Success', 'Notification set!');
       router.replace({ pathname: '/screens/symbol', params: { symbol } });
     } catch (e) {
       console.error('Network error:', e);
       Alert.alert('Error', 'Failed to set notification.');
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
-
 
   return (
     <View style={themedStyles.main}>
@@ -58,16 +80,15 @@ export default function NotificationSetup() {
         {mode === 'rally' ? 'Short term rally Notification' : 'Change of direction Notification'}
       </Text>
 
-      <Text style={[themedStyles.title, themedStyles.symbolPrice]}>
-        {typeof symbol === 'string' ?
-          `${symbol.replace('USDT', '/USD')}: $${crypto?.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
-          : ''}
-      </Text>
+      <LiveSymbolPrice symbol={symbol} style={[themedStyles.title, themedStyles.symbolPrice]} />
 
       <InformationBox mode={mode as Mode} />
 
       <Pressable
-        style={themedStyles.button}
+        style={({ pressed }) => [
+          themedStyles.button,
+          pressed && { opacity: 0.85 },
+        ]}
         onPress={handleSubmit}
         disabled={loading}
       >

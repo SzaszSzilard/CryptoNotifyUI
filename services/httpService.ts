@@ -2,6 +2,11 @@ import Constants from 'expo-constants';
 
 const API_BASE_URL = Constants.expoConfig?.extra?.API_BASE_URL || '';
 
+async function parseResponse<T>(res: Response): Promise<T> {
+  const text = await res.text();
+  return text ? (JSON.parse(text) as T) : (undefined as unknown as T);
+}
+
 export class HttpService {
   static async get<T>(url: string): Promise<T> {
     const res = await fetch(API_BASE_URL + url);
@@ -10,11 +15,11 @@ export class HttpService {
       console.error(`GET ${url} failed:`, res.status, await res.text());
       throw new Error(`GET ${url} failed: ${res.status}`);
     }
-    
-    return res.json();
+
+    return parseResponse<T>(res);
   }
 
-  static async post<T>(url: string, body: any): Promise<T> {
+  static async post<T>(url: string, body: unknown): Promise<T> {
     const res = await fetch(API_BASE_URL + url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -26,10 +31,10 @@ export class HttpService {
       throw new Error(`POST ${url} failed: ${res.status}`);
     }
 
-    return res.json();
+    return parseResponse<T>(res);
   }
 
-  static async delete<T>(url: string, body: any): Promise<T> {
+  static async delete<T>(url: string, body: unknown): Promise<T> {
     const res = await fetch(API_BASE_URL + url, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
@@ -41,6 +46,6 @@ export class HttpService {
       throw new Error(`DELETE ${url} failed: ${res.status}`);
     }
 
-    return res.json();
+    return parseResponse<T>(res);
   }
 }
